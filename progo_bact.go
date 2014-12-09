@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"math/rand"
 	"regexp"
 )
 
@@ -21,20 +19,31 @@ func (bacteria *ProgoBact) String() string {
 
 	chromosomeString := fmt.Sprint(bacteria.Chromosome)
 
-	ipsRegexp := regexp.MustCompile(fmt.Sprintf("(?m)^%03d", bacteria.State.IPS))
+	ipsRegexp := regexp.MustCompile(
+		fmt.Sprintf("(?m) %03d ", bacteria.State.IPS))
 
 	result := ""
 	result += fmt.Sprintf(
-		"BACTERIA %4.1fE (%p):\nState:\n%s\nChromosome:\n%s\n",
-		bacteria.Energy,
-		bacteria.SimpleBacteria,
+		"BACTERIA<%p> AGE %d DNA<%p>\nState:\n%s\nChromosome:\n%s\n",
+		bacteria,
+		bacteria.GetAge(),
+		bacteria.GetChromosome().GetDNAs()[0],
 		bacteria.State,
-		ipsRegexp.ReplaceAllString(chromosomeString, ">>>"),
+		ipsRegexp.ReplaceAllString(chromosomeString, " ==> "),
 	)
 
-	result += "Plasmids:"
-	for i, plasmid := range bacteria.Plasmids {
-		result += fmt.Sprintf("\nN%d:\n%s", i, plasmid)
+	if len(bacteria.Plasmids) > 0 {
+		result += "Plasmids:"
+		for i, plasmid := range bacteria.Plasmids {
+			if plasmid.Applied {
+				result += fmt.Sprintf("\n#%d (offset %d):\n%s", i,
+					plasmid.ReplaceIndex,
+					plasmid,
+				)
+			} else {
+				result += fmt.Sprintf("\n#%d:\n%s", i, plasmid)
+			}
+		}
 	}
 
 	if len(bacteria.Plasmids) > 0 {
@@ -45,40 +54,27 @@ func (bacteria *ProgoBact) String() string {
 }
 
 func (bacteria *ProgoBact) Simulate() {
-	bacteria.Age++
-	bacteria.Chromosome.DNA.(*ProgDNA).Eval(bacteria.State)
-	bacteria.Energy = bacteria.State.ExternalData.(*DataStorage).FunValue
+	bacteria.SimpleBacteria.Simulate()
+
+	bacteria.Chromosome.GetDNAs()[0].(*ProgoDNA).Eval(bacteria.State)
 }
 
-func (progobact *ProgoBact) Reproduce() Bacteria {
-	memSize := progobact.State.Memory.GetSize()
-	mem := NewProgramMemory(memSize)
-
-	data := progobact.State.ExternalData.(*DataStorage)
-	data.FunValue /= 2
-
-	newBacteria := &ProgoBact{
-		progobact.SimpleBacteria.Reproduce().(*SimpleBacteria),
-		&ProgramState{
-			IPS:    0,
-			Memory: mem,
-			ExternalData: &DataStorage{
-				FunValue: data.FunValue,
-			},
-		},
+func (progobact *ProgoBact) Reproduce() Creature {
+	base := progobact.SimpleBacteria.Reproduce()
+	if base == nil {
+		return nil
 	}
 
-	newDna := newBacteria.GetChromosome().(*SimpleChromosome).DNA.(*ProgDNA)
+	simpleBacteria := base.(*SimpleBacteria)
+	simpleBacteria.Parents = []Creature{progobact}
 
-	for i, cp := range *newDna.Program {
-		if rand.Float64() > 0.95 {
-			(*newDna.Program)[i].Instruction = RandProgramInstruction(memSize)
-			log.Printf("mutation at %d: '%s' -> '%s'", i, cp.Instruction,
-				(*newDna.Program)[i].Instruction)
-		}
+	newState := progobact.State.Clone()
+	newState.ExternalData = base.GetEnergy()
+
+	return &ProgoBact{
+		SimpleBacteria: simpleBacteria,
+		State:          newState,
 	}
-
-	return newBacteria
 }
 
 func (bacteria *ProgoBact) Died() bool {

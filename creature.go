@@ -6,15 +6,18 @@ import (
 )
 
 type Creature interface {
-	GetEnergy() float64
-	SetEnergy(float64)
-	Kill(Creature) bool
+	GetEnergy() Energy
+	SetEnergy(Energy)
+	CanKill(Creature) bool
 	// thx @a.baranov
 	Consume(Creature)
+	Kill()
 	Died() bool
 	GetChromosome() Chromosome
 	GetAge() int
 	Simulate()
+	GetParents() []Creature
+	Reproduce() Creature
 }
 
 type Population []Creature

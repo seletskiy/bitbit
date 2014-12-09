@@ -1,9 +1,6 @@
 package main
 
-import (
-	"log"
-	"math/rand"
-)
+import "math/rand"
 
 func HorizontalGeneTransfer(population Population) Population {
 	for _, c := range population {
@@ -76,7 +73,7 @@ func exchangePlasmids(bacteria Bacteria, population []Creature) {
 
 		pn := rand.Intn(len(plasmids))
 
-		log.Printf("plasmid #%d exchange %p -> %p", pn, bacteria, target)
+		logger.Log(Debug, "plasmid #%d exchange %p -> %p", pn, bacteria, target)
 
 		plasmid := *plasmids[pn]
 		plasmid.Applied = false
@@ -109,7 +106,7 @@ func applyPlasmids(bacteria Bacteria) {
 		return
 	}
 
-	log.Printf("plasmid #%d applied to %p", pn+1, bacteria)
+	logger.Log(Debug, "plasmid #%d applied to %p", pn+1, bacteria)
 
 	plasmid.Apply(bacteria.GetChromosome().(*SimpleChromosome))
 

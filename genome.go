@@ -17,4 +17,5 @@ type Chromosome interface {
 	GetRecessiveGene(int) Gene
 	GetLength() int
 	Clone() Chromosome
+	GetDNAs() []DNA
 }

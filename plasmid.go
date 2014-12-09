@@ -7,20 +7,24 @@ import (
 )
 
 type Plasmid struct {
-	Applied   bool
-	Exchanged bool
-	Prefix    []Gene
-	Code      []Gene
+	Id           int64
+	Self         bool
+	Applied      bool
+	Exchanged    bool
+	Prefix       []Gene
+	Code         []Gene
+	ReplaceIndex int
 }
 
-func (p *Plasmid) Apply(chromosome *SimpleChromosome) bool {
+func (p *Plasmid) Apply(chromosome *SimpleChromosome) (bool, int) {
 	dna := chromosome.DNA
 	if variants := matchPrefix(dna, p.Prefix); len(variants) > 0 {
-		dna.Replace(variants[rand.Intn(len(variants))], p.Code)
+		p.ReplaceIndex = rand.Intn(len(variants))
+		dna.Replace(variants[p.ReplaceIndex], p.Code)
 		p.Applied = true
-		return true
+		return true, p.ReplaceIndex
 	} else {
-		return false
+		return false, 0
 	}
 }
 
@@ -32,13 +36,17 @@ func (p *Plasmid) String() string {
 		foreign = 'E'
 	}
 
+	if p.Self {
+		foreign = 'S'
+	}
+
 	applied := ' '
 	if p.Applied {
 		applied = '+'
 	}
 
 	for _, g := range p.Prefix {
-		result = append(result, fmt.Sprintf("  #  %s", g))
+		result = append(result, fmt.Sprintf("  ?  %s", g))
 	}
 
 	for _, g := range p.Code {
@@ -52,11 +60,10 @@ func matchPrefix(dna DNA, prefix []Gene) []int {
 	result := make([]int, 0)
 
 	dnaCode := dna.GetCode()
-
 	for j, _ := range dnaCode {
 		i := 0
 		matched := true
-		for j, gene2 := range prefix {
+		for _, gene2 := range prefix {
 			if j+i >= len(dnaCode) {
 				matched = false
 				break

@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 type ProgramMemory struct {
 	Cells []float64
@@ -26,11 +23,27 @@ func (m *ProgramMemory) GetSize() int {
 }
 
 func (m *ProgramMemory) String() string {
-	result := make([]string, 0)
+	result := ""
 
 	for i, cell := range m.Cells {
-		result = append(result, fmt.Sprintf("%03d  %10.7f", i, cell))
+		result += fmt.Sprintf("%03d  % 10.7f\n", i, cell)
 	}
 
-	return strings.Join(result, "\n")
+	return result
+}
+
+func (memory *ProgramMemory) Clone() *ProgramMemory {
+	destinationCells := make([]float64, len(memory.Cells))
+
+	copy(destinationCells, memory.Cells)
+
+	return &ProgramMemory{
+		Cells: destinationCells,
+	}
+}
+
+func (memory *ProgramMemory) Zero() {
+	for index, _ := range memory.Cells {
+		memory.Cells[index] = 0
+	}
 }

@@ -5,89 +5,145 @@ import (
 	"math/rand"
 )
 
-func RandProgramInstructionToValueTuple(
-	valueVariance float64,
-	referenceOccurenceRate float64,
-	maxRegisterNumber int,
-) (Register, Reference) {
-	var to Register
-	var from Reference
-
-	to = FloatRegister(rand.Intn(maxRegisterNumber))
-	if rand.Float64() < referenceOccurenceRate {
-		from = FloatRegister(rand.Intn(maxRegisterNumber))
-	} else {
-		from = FloatValue((rand.Float64() - 0.5) * valueVariance)
-	}
-
-	return to, from
+type RandInstructionVariant struct {
+	Instruction ProgramInstruction
+	Weight      float64
 }
 
-func RandProgramInstruction(maxRegisterNumber int) ProgramInstruction {
-	variants := []struct {
-		Instruction ProgramInstruction
-		Weight      float64
-	}{
-		{&ProgramInstructionAdd{}, 1.0},
-		{&ProgramInstructionMov{}, 1.0},
-		{&ProgramInstructionDiv{}, 0.3},
-		{&ProgramInstructionFun{}, 0.1},
-		{&ProgramInstructionNop{}, 1.0},
+func RandProgramInstructionJumpValue(
+	maxInstructionNumber int,
+) ProgramArgJump {
+	return ForwardJump(rand.Intn(maxInstructionNumber) + 1)
+}
+
+func RandProgramInstructionOutValue(
+	maxRegisterNumber int,
+) ProgramArgRegister {
+	return FloatRegister(rand.Intn(maxRegisterNumber))
+}
+
+func RandProgramInstructionInValue(
+	valueVarianceGenerator func() float64,
+	referenceProbability float64,
+	maxRegisterNumber int,
+) ProgramArgReference {
+	var value ProgramArgReference
+
+	if rand.Float64() < referenceProbability {
+		value = RandProgramInstructionOutValue(maxRegisterNumber)
+	} else {
+		value = FloatValue(valueVarianceGenerator())
 	}
 
+	return value
+}
+func ChooseWeighted(variants []float64) int {
 	sum := 0.0
 	for _, variant := range variants {
-		sum += variant.Weight
+		sum += variant
 	}
 
 	random := rand.Float64()
 
-	var chosenOne ProgramInstruction
-
-	for _, variant := range variants {
-		if random >= variant.Weight/sum {
-			random -= variant.Weight / sum
+	for variantIndex, variant := range variants {
+		if random >= variant/sum {
+			random -= variant / sum
 			continue
 		} else {
-			chosenOne = variant.Instruction
-			break
+			return variantIndex
 		}
 	}
 
-	switch instruction := chosenOne.(type) {
-	case ProgramInstructionArgsToValueSetter:
-		to, value := RandProgramInstructionToValueTuple(
-			10.0,
-			0.5,
-			maxRegisterNumber,
-		)
-		instruction.SetTo(to)
-		instruction.SetValue(value)
-	case ProgramInstructionArgsValueSetter:
-		_, value := RandProgramInstructionToValueTuple(
-			10.0,
-			0.5,
-			maxRegisterNumber,
-		)
-		instruction.SetValue(value)
-	case *ProgramInstructionNop:
-		// empty
+	return 0
+}
+
+func RandProgramInstruction(
+	referenceProbability float64,
+	valueVarianceGenerator func() float64,
+	maxRegisterNumber int,
+	maxInstructionNumber int,
+	variants []RandInstructionVariant,
+) ProgramInstruction {
+	weights := make([]float64, len(variants))
+	for i, variant := range variants {
+		weights[i] = variant.Weight
+	}
+
+	chosenOne := variants[ChooseWeighted(weights)].Instruction.Copy()
+	chosenOne.Init()
+
+	argsNumber := chosenOne.GetArgsCount()
+	for argIndex := 0; argIndex < argsNumber; argIndex++ {
+		switch chosenOne.GetArg(argIndex).(type) {
+		case ProgramArgRegister:
+			chosenOne.SetArg(argIndex,
+				RandProgramInstructionOutValue(maxRegisterNumber),
+			)
+		case ProgramArgReference:
+			chosenOne.SetArg(argIndex, RandProgramInstructionInValue(
+				valueVarianceGenerator,
+				referenceProbability,
+				maxRegisterNumber,
+			))
+		case ProgramArgJump:
+			chosenOne.SetArg(argIndex,
+				RandProgramInstructionJumpValue(maxInstructionNumber),
+			)
+		default:
+			panic("unknown arg type")
+		}
 	}
 
 	return chosenOne
 }
 
-func RandProgram(layout *Program, maxRegisterNumber int) *Program {
-	newProg := make(Program, len(*layout))
+func RandProgramInstructionSet(
+	programLength int,
+	referenceProbability float64,
+	valueVarianceGenerator func() float64,
+	maxRegisterNumber int,
+	variants []RandInstructionVariant,
+) []ProgramInstruction {
+	instructions := make([]ProgramInstruction, programLength)
 
-	for i, point := range *layout {
-		newProg[i] = Codepoint{
-			Label:       point.Label,
-			Instruction: RandProgramInstruction(maxRegisterNumber),
+	for index, _ := range instructions {
+		instructions[index] = RandProgramInstruction(
+			referenceProbability,
+			valueVarianceGenerator,
+			maxRegisterNumber,
+			programLength,
+			variants,
+		)
+	}
+
+	return instructions
+}
+
+func RandProgram(
+	layout *Program,
+	referenceProbability float64,
+	valueVarianceGenerator func() float64,
+	maxRegisterNumber int,
+	instructionVariants []RandInstructionVariant,
+) *Program {
+	program := make(Program, len(*layout))
+
+	instructions := RandProgramInstructionSet(
+		len(program),
+		referenceProbability,
+		valueVarianceGenerator,
+		maxRegisterNumber,
+		instructionVariants,
+	)
+
+	for index, codepoint := range *layout {
+		program[index] = Codepoint{
+			Label:       codepoint.Label,
+			Instruction: instructions[index],
 		}
 	}
 
-	return &newProg
+	return &program
 }
 
 func RandInstructionLabel(length int) string {
@@ -114,27 +170,24 @@ func RandProgramLayout(length int) *Program {
 }
 
 func RandProgoBact(
-	layout *Program,
-	memSize int,
-	initialEnergy float64,
-	externalData interface{},
+	memorySize int,
+	program *Program,
+	initialEnergy Energy,
 ) *ProgoBact {
-	mem := NewProgramMemory(memSize)
-
-	return &ProgoBact{
+	bacteria := &ProgoBact{
 		&SimpleBacteria{
 			Energy: initialEnergy,
 			Chromosome: &SimpleChromosome{
-				&ProgDNA{
-					RandProgram(layout, memSize),
-				},
+				&ProgoDNA{program},
 			},
 			Plasmids: nil,
 		},
 		&ProgramState{
 			IPS:          0,
-			Memory:       mem,
-			ExternalData: externalData,
+			Memory:       NewProgramMemory(memorySize),
+			ExternalData: initialEnergy,
 		},
 	}
+
+	return bacteria
 }

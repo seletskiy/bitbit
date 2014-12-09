@@ -25,3 +25,7 @@ func (chromosome *SimpleChromosome) Clone() Chromosome {
 		DNA: chromosome.DNA.Copy(),
 	}
 }
+
+func (chromosome *SimpleChromosome) GetDNAs() []DNA {
+	return []DNA{chromosome.DNA}
+}

@@ -1,50 +1,33 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
-	"strings"
 )
 
 type ProgramInstruction interface {
-	Eval(*ProgramState)
+	Eval(state *ProgramState) error
+	GetArgsCount() int
+	SetArg(index int, arg ProgramInstructionArg)
+	GetArg(index int) ProgramInstructionArg
+	Init()
+	Copy() ProgramInstruction
 }
 
-type ProgramInstructionArgsValueSetter interface {
-	SetValue(Reference)
+type ProgramInstructionValue interface {
+	GetFloat64() float64
+	GetInt() int
 }
 
-type ProgramInstructionArgsToValueSetter interface {
-	ProgramInstructionArgsValueSetter
-	SetTo(Register)
-}
-
-type ProgramInstructionArgsValue struct {
-	Value Reference
-}
-
-type ProgramInstructionArgsToValue struct {
-	To Register
-	ProgramInstructionArgsValue
-}
-
-func (op *ProgramInstructionArgsToValue) SetTo(register Register) {
-	op.To = register
-}
-
-func (op *ProgramInstructionArgsValue) SetValue(reference Reference) {
-	op.Value = reference
-}
-
-func (op *ProgramInstructionArgsValue) Eval(state *ProgramState) {
-	panic(`must be reimplemented`)
-}
+// @TODO: consider fill it with methods
+type ProgramInstructionArg interface{}
 
 type ProgramState struct {
 	IPS          int
 	Crashed      bool
 	Memory       *ProgramMemory
 	ExternalData interface{}
+	CrashReport  error
 }
 
 type Codepoint struct {
@@ -54,51 +37,96 @@ type Codepoint struct {
 
 type Program []Codepoint
 
-func (program *Program) String() string {
-	result := []string{}
+func (program Program) String() string {
+	result := ""
 
-	for i, cp := range *program {
-		result = append(result, fmt.Sprintf("%03d   %s", i, cp.Instruction))
+	jumpPath := -1
+	for i, codepoint := range program {
+		jumpPrefix := " "
+		if jumpPath >= 0 {
+			if jumpPath == 0 {
+				jumpPrefix = "X"
+			} else {
+				jumpPrefix = "↓"
+			}
+			jumpPath--
+		}
+
+		switch jump := codepoint.Instruction.(type) {
+		case *ProgramInstructionJumpGreaterThan:
+			if jump.Jumped {
+				jumpPath = int(jump.Jump.(ForwardJump))
+				jumpPrefix = "*"
+			}
+		}
+
+		result += fmt.Sprintf(
+			"OP<%012p> %s %03d   %s\n",
+			codepoint.Instruction,
+			jumpPrefix,
+			i, codepoint,
+		)
 	}
 
-	result = append(result, fmt.Sprintf("%03d   END", len(*program)))
+	result += fmt.Sprintf("OP<%#012x>   %03d   END\n", 0, len(program))
 
-	return strings.Join(result, "\n")
+	return result
 }
 
-func (c Codepoint) String() string {
-	return fmt.Sprintf("%s", c.Instruction)
+func (codepoint Codepoint) String() string {
+	return fmt.Sprint(codepoint.Instruction)
 }
 
-func (program *Program) Eval(state *ProgramState) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("crash: %s", err)
-			state.Crashed = true
+func (program Program) Eval(state *ProgramState) error {
+	// @TODO: move to separate method
+	for _, codepoint := range program {
+		switch jump := codepoint.Instruction.(type) {
+		case *ProgramInstructionJumpGreaterThan:
+			jump.Jumped = false
 		}
-	}()
+	}
 
 	state.Crashed = false
 
 	state.IPS = 0
 
+	var err error
+
 	for {
 		ips := state.IPS
 
-		(*program)[ips].Instruction.Eval(state)
+		err = program[ips].Instruction.Eval(state)
+		if err != nil {
+			state.Crashed = true
+			break
+		}
 
 		if ips == state.IPS {
-			state.IPS += 1
+			state.IPS++
+		}
+
+		if state.IPS == len(program) {
+			return nil
 		}
 
 		if state.IPS < 0 {
-			return
+			state.Crashed = true
+			state.IPS = ips
+			err = errors.New(`IPS is out of bounds`)
+			break
 		}
 
-		if state.IPS >= len(*program) {
-			return
+		if state.IPS > len(program) {
+			state.Crashed = true
+			state.IPS = ips
+			err = errors.New(`IPS is out of bounds`)
+			break
 		}
 	}
+
+	state.CrashReport = err
+
+	return err
 }
 
 func (state *ProgramState) String() string {
@@ -106,16 +134,22 @@ func (state *ProgramState) String() string {
 
 	result += fmt.Sprintf("%s\n\n", state.Memory)
 
+	result += "\n"
+	result += fmt.Sprintf("External:\n%s", state.ExternalData)
+	result += "\n"
+	result += "\n"
 	result += fmt.Sprintf("IPS @ %03d", state.IPS)
 	if state.Crashed {
-		result += " !!! CRASHED\n"
+		result += fmt.Sprintf(" !!! CRASHED: %s\n", state.CrashReport)
 	} else {
 		result += "\n"
 	}
 
-	result += "\n"
-	result += fmt.Sprintf("External:\n%s", state.ExternalData)
-	result += "\n"
-
 	return result
+}
+
+func (state *ProgramState) Clone() *ProgramState {
+	return &ProgramState{
+		Memory: state.Memory.Clone(),
+	}
 }
