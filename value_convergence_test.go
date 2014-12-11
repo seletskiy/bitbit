@@ -184,8 +184,10 @@ func TestCanConvergeToNumberValue(t *testing.T) {
 		)
 
 		energy := &TestEnergy{
+			ReproductiveEnergy: ReproductiveEnergy{
+				Potential: 1,
+			},
 			TargetValue: targetValue,
-			Potential:   1,
 		}
 
 		population[i] = RandProgoBact(programMemorySize, program, energy)
