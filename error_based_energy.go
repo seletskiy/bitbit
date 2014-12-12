@@ -14,16 +14,21 @@ type ErrorGetterEnergy interface {
 	GetLastError() float64
 }
 
+type ValueGetter interface {
+	Get() float64
+}
+
 type ErrorBasedEnergy struct {
 	*ReproductiveEnergy
-	TargetValue  float64
+	TargetValue  ValueGetter
+	ConsiderZero float64
 	CurrentValue float64
 	LastError    float64
 	Set          bool
 }
 
 func (origin *ErrorBasedEnergy) GetError() float64 {
-	return origin.TargetValue - origin.CurrentValue
+	return origin.TargetValue.Get() - origin.CurrentValue
 }
 
 func (origin *ErrorBasedEnergy) GetLastError() float64 {
@@ -35,12 +40,16 @@ func (origin *ErrorBasedEnergy) SetValue(value float64) {
 	origin.CurrentValue = value
 }
 
-func (origin *ErrorBasedEnergy) SetTargetValue(value float64) {
-	origin.TargetValue = value
-}
-
 func (origin ErrorBasedEnergy) GetFloat64() float64 {
 	return 1 / math.Abs(origin.GetError())
+}
+
+func (origin ErrorBasedEnergy) Void() bool {
+	if origin.ReproductiveEnergy.Void() {
+		return true
+	} else {
+		return math.Abs(origin.GetFloat64()) <= origin.ConsiderZero
+	}
 }
 
 func (origin *ErrorBasedEnergy) Scatter(n int) []Energy {
@@ -50,6 +59,7 @@ func (origin *ErrorBasedEnergy) Scatter(n int) []Energy {
 			&ErrorBasedEnergy{
 				ReproductiveEnergy: part.(*ReproductiveEnergy),
 				TargetValue:        origin.TargetValue,
+				ConsiderZero:       origin.ConsiderZero,
 				LastError:          origin.LastError,
 			},
 		)

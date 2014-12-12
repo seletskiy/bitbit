@@ -1,11 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"math"
-	"sort"
-	"testing"
-)
+import "testing"
 
 type ValueStore struct {
 	Data float64
@@ -44,53 +39,11 @@ type PopulationValidator interface {
 	Validate(Population) bool
 }
 
-type MedianErrorValidator struct {
-	Threshold float64
-}
-
-func (validator MedianErrorValidator) Validate(population Population) bool {
-	populationErrors := []float64{}
-	for _, creature := range population {
-		if creature.GetAge() <= 0 {
-			continue
-		}
-
-		populationErrors = append(populationErrors,
-			math.Abs(
-				creature.GetEnergy().(ErrorGetterEnergy).GetError(),
-			),
-		)
-	}
-	sort.Float64s(populationErrors)
-
-	minError := populationErrors[0]
-	medianError := populationErrors[len(populationErrors)/2]
-	totalError := 0.0
-	for _, val := range populationErrors {
-		totalError += val
-	}
-
-	fmt.Printf(
-		"avg err: %10.4f med: %10.4f min: %10.4f (%3d/%3d)\n",
-		totalError/float64(len(populationErrors)),
-		medianError,
-		minError,
-		len(populationErrors),
-		len(population),
-	)
-
-	if medianError <= validator.Threshold {
-		return true
-	} else {
-		return false
-	}
-}
-
 func converge(
 	valueGenerator ValueGenerator,
 	validator PopulationValidator,
 	additionalInstructions []RandInstructionVariant,
-) Population {
+) (population Population, tick int) {
 	programInstructionVariants := []RandInstructionVariant{
 		{&ProgramInstructionAdd{},
 			addInstructionProbability},
@@ -116,7 +69,7 @@ func converge(
 
 	externalValueStore := ValueStore{}
 
-	population := make(Population, initialPopulationSize)
+	population = make(Population, initialPopulationSize)
 	for i := 0; i < initialPopulationSize; i++ {
 		program := RandProgram(
 			programLayout,
@@ -126,17 +79,20 @@ func converge(
 			programInstructionVariants,
 		)
 
-		energy := &ExternalValueEnergy{
-			ErrorBasedEnergy: &ErrorBasedEnergy{
-				ReproductiveEnergy: &ReproductiveEnergy{
-					Potential: 1,
-				},
+		energy := &ErrorBasedEnergy{
+			ReproductiveEnergy: &ReproductiveEnergy{
+				Potential: 1,
 			},
 
-			Store: &externalValueStore,
+			ConsiderZero: 1e-6,
+
+			TargetValue: externalValueStore,
 		}
 
-		population[i] = RandProgoBact(programMemorySize, program, energy)
+		population[i] = RandProgoBact(
+			programMemorySize, program, energy,
+			dataSource,
+		)
 	}
 
 	environment := SimpleEnvironment{
@@ -151,7 +107,7 @@ func converge(
 		},
 	}
 
-	tick := 0
+	tick = 0
 	for len(population) > 0 {
 		externalValueStore.Set(valueGenerator.Generate())
 
@@ -164,15 +120,43 @@ func converge(
 		tick++
 	}
 
-	return population
+	return population, tick
+}
+
+func validate(
+	population Population, validator PopulationValidator, ticks int,
+) bool {
+	environment := SimpleEnvironment{
+		Rules: []Rules{
+			defaultSumulationRules,
+			//defaultBacterialRules,
+			defaultReapRules,
+		},
+	}
+
+	for ticks > 0 {
+		environment.Simulate(&population)
+
+		ticks--
+	}
+
+	return validator.Validate(population)
 }
 
 func TestCanConvergeToConstantValue(t *testing.T) {
-	converge(
+	validator := MedianErrorValidator{Threshold: 0.001}
+
+	validator.LogPrefix = "[evolve] "
+	population, _ := converge(
 		ConstGenerator(12345.6),
-		MedianErrorValidator{0.001},
+		validator,
 		[]RandInstructionVariant{},
 	)
+
+	validator.LogPrefix = "[check]  "
+	if !validate(population, validator, 100) {
+		t.Fatalf("population evolve, but failed to continue it's life")
+	}
 }
 
 //func TestCanEstimateLinearFunction(t *testing.T) {

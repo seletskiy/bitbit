@@ -173,6 +173,7 @@ func RandProgoBact(
 	memorySize int,
 	program *Program,
 	initialEnergy Energy,
+	externalData interface{},
 ) *ProgoBact {
 	bacteria := &ProgoBact{
 		&SimpleBacteria{
@@ -185,7 +186,7 @@ func RandProgoBact(
 		&ProgramState{
 			IPS:          0,
 			Memory:       NewProgramMemory(memorySize),
-			ExternalData: initialEnergy,
+			ExternalData: externalData,
 		},
 	}
 
