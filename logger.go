@@ -2,7 +2,7 @@ package main
 
 import "log"
 
-var logger Logger = Nothing
+var logger Logger = Debug
 
 type Logger int
 

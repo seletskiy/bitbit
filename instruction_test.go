@@ -7,7 +7,7 @@ type TestInstruction struct {
 }
 
 func (instruction *TestInstruction) Eval(state *ProgramState) error {
-	state.ExternalData.(ValueSetterEnergy).SetValue(
+	state.ExternalData.(*GeneratedValueEnergy).SetCurrentValue(
 		instruction.In.GetValue(state).GetFloat64(),
 	)
 	return nil

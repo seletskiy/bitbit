@@ -1,13 +1,16 @@
 package main
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+)
 
 const (
-	initialPopulationSize = 1000
+	initialPopulationSize = 100
 	initialFunds          = 100000.0
 	initialGoods          = 10000.0
 
-	programLength               = 30
+	programLength               = 10
 	programMemorySize           = 10
 	programReferenceProbability = 0.3
 	programValueVariance        = 1.0
@@ -18,8 +21,10 @@ const (
 	addInstructionProbability             = 1.0
 	movInstructionProbability             = 1.0
 	divInstructionProbability             = 0.5
+	mulInstructionProbability             = 0.5
 	nopInstructionProbability             = 1.0
 	jumpGreaterThanInstructionProbability = 0.2
+	clsInstructionProbability             = 0.05
 
 	floatValueMutationProbability = 0.8
 	referenceMutationProbability  = 0.5
@@ -29,7 +34,6 @@ const (
 	smallChangeValueMutationProbability = 0.6
 
 	reproduceProbability = 0.5
-	minReproduceAge      = 5
 
 	dnaMutationProbability = 0.1
 	dnaMutationMaxSize     = 3
@@ -41,7 +45,12 @@ const (
 
 	minKillAge = 0
 
-	diePercentile = 0.90
+	diePercentile = 0.80
+
+	minSelectionAge = 3
+	minReproduceAge = 3
+
+	maxDataIndex = 1
 )
 
 var defaultReproduceRules = ReproduceRules{
@@ -49,7 +58,9 @@ var defaultReproduceRules = ReproduceRules{
 	MinReproduceAge:      minReproduceAge,
 }
 
-var defaultAggressiveReproduceRules = AggressiveReproduceRules{}
+var defaultAggressiveReproduceRules = AggressiveReproduceRules{
+	MinAge: minReproduceAge,
+}
 
 var defaultBacterialRules = BacterialGeneTransferRules{
 	BirthTransferProbability:      0.5,
@@ -72,6 +83,7 @@ var defaultSelectionRules = NaturalSelectionRules{
 
 var defaultAggressiveSelectionRules = AggressiveNaturalSelectionRules{
 	DiePercentile: diePercentile,
+	MinAge:        minSelectionAge,
 }
 
 func defaultVarianceGenerator() float64 {
@@ -126,6 +138,17 @@ func defaultGeneMutator(gene Gene) Gene {
 		mutatedArg = RandProgramInstructionOutValue(
 			programMemorySize,
 		)
+	case Index:
+		logger.Log(Debug, "MUTATE: GENE<%p> mutate as index", instruction)
+		currentValue := concreteOperand.GetValue(nil).GetInt()
+		variance := currentValue
+		if rand.Float64() < smallChangeValueMutationProbability {
+			variance = 5
+		}
+
+		mutatedArg = Index(math.Abs(
+			float64(rand.Intn(variance+1) - variance/2 + currentValue),
+		))
 	case FloatValue:
 		logger.Log(Debug, "MUTATE: GENE<%p> mutate as float value", instruction)
 		currentValue := concreteOperand.GetValue(nil).GetFloat64()
@@ -168,6 +191,7 @@ func defaultGeneGenerator(
 		programReferenceProbability,
 		defaultVarianceGenerator,
 		programMemorySize,
+		maxDataIndex,
 		programInstructionVariants,
 	)
 

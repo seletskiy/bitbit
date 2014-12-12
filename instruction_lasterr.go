@@ -7,9 +7,10 @@ type LastErrorInstruction struct {
 }
 
 func (instruction *LastErrorInstruction) Eval(state *ProgramState) error {
-	instruction.Out.SetValue(state,
-		FloatValue(state.ExternalData.(ErrorGetterEnergy).GetLastError()),
-	)
+	panic("not implemented!")
+	//instruction.Out.SetValue(state,
+	//    FloatValue(state.ExternalData.(ErrorGetterEnergy).GetLastError()),
+	//)
 
 	return nil
 }

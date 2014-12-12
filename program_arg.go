@@ -17,6 +17,24 @@ type ProgramArgJump interface {
 
 type ForwardJump uint
 
+type Index uint
+
+func (index Index) GetValue(state *ProgramState) ProgramInstructionValue {
+	return ProgramInstructionValue(index)
+}
+
+func (index Index) GetInt() int {
+	return int(index)
+}
+
+func (index Index) GetFloat64() float64 {
+	panic("can't get float64 value")
+}
+
+func (index Index) String() string {
+	return fmt.Sprintf("*%d", index)
+}
+
 func (jump ForwardJump) Apply(state *ProgramState) {
 	state.IPS += int(jump)
 }

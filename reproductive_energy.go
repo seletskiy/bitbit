@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type PotentialEnergy interface {
 	TransferPotential(target ReproductiveEnergy)
@@ -65,4 +68,11 @@ func (energy *ReproductiveEnergy) Void() bool {
 }
 
 func (energy *ReproductiveEnergy) Simulate() {
+}
+
+func (energy *ReproductiveEnergy) String() string {
+	return fmt.Sprintf("can split to %d; dead: %v",
+		energy.Potential-1,
+		energy.Dead,
+	)
 }

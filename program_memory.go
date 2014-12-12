@@ -26,7 +26,7 @@ func (m *ProgramMemory) String() string {
 	result := ""
 
 	for i, cell := range m.Cells {
-		result += fmt.Sprintf("%03d  % 10.7f\n", i, cell)
+		result += fmt.Sprintf("%03d  % 10.7g\n", i, cell)
 	}
 
 	return result

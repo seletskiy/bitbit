@@ -1,27 +1,49 @@
 package main
 
-import "sort"
+import (
+	"math"
+	"sort"
+)
 
 type AggressiveNaturalSelectionRules struct {
 	DiePercentile float64
+	MinAge        int
 }
 
 func (rules AggressiveNaturalSelectionRules) Apply(
 	population *Population,
 ) {
-	sortedPopulation := *population
-	sort.Sort(ByEnergy(sortedPopulation))
+	selected := []Creature{}
 
-	populationSize := len(sortedPopulation)
-	deadIndex := int(float64(populationSize) * rules.DiePercentile)
-	percentileValue := sortedPopulation[deadIndex].GetEnergy().GetFloat64()
-	maxValue := sortedPopulation[populationSize-1].GetEnergy().GetFloat64()
+	for _, creature := range *population {
+		if creature.GetAge() < rules.MinAge {
+			continue
+		}
+
+		selected = append(selected, creature)
+	}
+
+	if len(selected) == 0 {
+		logger.Log(Debug, "SELECTION: population too young")
+		return
+	}
+
+	sort.Sort(ByEnergy(selected))
+
+	length := len(selected)
+	deadIndex := int(math.Min(
+		float64(length)*rules.DiePercentile,
+		float64(length-1),
+	))
+
+	percentileValue := selected[deadIndex].GetEnergy().GetFloat64()
+	maxValue := selected[length-1].GetEnergy().GetFloat64()
 
 	logger.Log(Debug, "SELECTION: killing percentile: %f", percentileValue)
 
-	for creatureIndex, creature := range sortedPopulation {
+	for creatureIndex, creature := range selected {
 		energy := creature.GetEnergy().GetFloat64()
-		if creatureIndex > deadIndex {
+		if creatureIndex >= deadIndex {
 			if energy >= maxValue {
 				continue
 			}

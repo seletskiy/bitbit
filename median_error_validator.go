@@ -8,21 +8,22 @@ import (
 
 type MedianErrorValidator struct {
 	Threshold float64
-	LogPrefix string
 }
 
-func (validator MedianErrorValidator) Validate(population Population) bool {
+func (validator MedianErrorValidator) Validate(
+	step string, population Population,
+) bool {
 	populationErrors := []float64{}
 	for _, creature := range population {
 		if creature.GetAge() <= 0 {
 			continue
 		}
 
-		populationErrors = append(populationErrors,
-			math.Abs(
-				creature.GetEnergy().(ErrorGetterEnergy).GetError(),
-			),
+		absError := math.Abs(
+			creature.GetEnergy().(ErrorGetterEnergy).GetError(),
 		)
+		//log.Printf("aaa %p %10.5f", creature, absError)
+		populationErrors = append(populationErrors, absError)
 	}
 	sort.Float64s(populationErrors)
 
@@ -34,8 +35,8 @@ func (validator MedianErrorValidator) Validate(population Population) bool {
 	}
 
 	fmt.Printf(
-		"%savg err: %10.4g med: %10.4f min: %10.4f (%3d/%3d)\n",
-		validator.LogPrefix,
+		"[%10s] avg err: %10.4g med: %10.5f min: %10.5f (%4d/%4d)\n",
+		step,
 		totalError/float64(len(populationErrors)),
 		medianError,
 		minError,

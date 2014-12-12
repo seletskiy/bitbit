@@ -10,6 +10,12 @@ type RandInstructionVariant struct {
 	Weight      float64
 }
 
+func RandProgramInstructionDataIndex(
+	maxDataIndex int,
+) Index {
+	return Index(rand.Intn(maxDataIndex + 1))
+}
+
 func RandProgramInstructionJumpValue(
 	maxInstructionNumber int,
 ) ProgramArgJump {
@@ -62,6 +68,7 @@ func RandProgramInstruction(
 	valueVarianceGenerator func() float64,
 	maxRegisterNumber int,
 	maxInstructionNumber int,
+	maxDataIndex int,
 	variants []RandInstructionVariant,
 ) ProgramInstruction {
 	weights := make([]float64, len(variants))
@@ -75,6 +82,10 @@ func RandProgramInstruction(
 	argsNumber := chosenOne.GetArgsCount()
 	for argIndex := 0; argIndex < argsNumber; argIndex++ {
 		switch chosenOne.GetArg(argIndex).(type) {
+		case Index:
+			chosenOne.SetArg(argIndex,
+				RandProgramInstructionDataIndex(maxDataIndex),
+			)
 		case ProgramArgRegister:
 			chosenOne.SetArg(argIndex,
 				RandProgramInstructionOutValue(maxRegisterNumber),
@@ -102,6 +113,7 @@ func RandProgramInstructionSet(
 	referenceProbability float64,
 	valueVarianceGenerator func() float64,
 	maxRegisterNumber int,
+	maxDataIndex int,
 	variants []RandInstructionVariant,
 ) []ProgramInstruction {
 	instructions := make([]ProgramInstruction, programLength)
@@ -112,6 +124,7 @@ func RandProgramInstructionSet(
 			valueVarianceGenerator,
 			maxRegisterNumber,
 			programLength,
+			maxDataIndex,
 			variants,
 		)
 	}
@@ -124,6 +137,7 @@ func RandProgram(
 	referenceProbability float64,
 	valueVarianceGenerator func() float64,
 	maxRegisterNumber int,
+	maxDataIndex int,
 	instructionVariants []RandInstructionVariant,
 ) *Program {
 	program := make(Program, len(*layout))
@@ -133,6 +147,7 @@ func RandProgram(
 		referenceProbability,
 		valueVarianceGenerator,
 		maxRegisterNumber,
+		maxDataIndex,
 		instructionVariants,
 	)
 
@@ -173,7 +188,6 @@ func RandProgoBact(
 	memorySize int,
 	program *Program,
 	initialEnergy Energy,
-	externalData interface{},
 ) *ProgoBact {
 	bacteria := &ProgoBact{
 		&SimpleBacteria{
@@ -186,7 +200,7 @@ func RandProgoBact(
 		&ProgramState{
 			IPS:          0,
 			Memory:       NewProgramMemory(memorySize),
-			ExternalData: externalData,
+			ExternalData: initialEnergy,
 		},
 	}
 
