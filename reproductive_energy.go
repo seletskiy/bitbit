@@ -49,6 +49,8 @@ func (energy *ReproductiveEnergy) Scatter(n int) []Energy {
 		scattered = append(scattered, &ReproductiveEnergy{
 			Potential: transfer,
 		})
+
+		energy.Potential -= transfer
 	}
 
 	return scattered
