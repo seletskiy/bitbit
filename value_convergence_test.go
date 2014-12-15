@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"testing"
 )
@@ -46,8 +47,8 @@ func (generator LinearGenerator) GetData(tableIndex, cellIndex int) float64 {
 }
 
 func (generator *LinearGenerator) Simulate() {
-	generator.X += 0.001
-	//generator.X = rand.Float64() * 100.0
+	//generator.X += 0.001
+	generator.X = 2 * (rand.Float64() - 0.5) * 100.0
 }
 
 func (generator LinearGenerator) String() string {
@@ -93,9 +94,9 @@ func (generator *SinGenerator) Simulate() {
 	generator.History[generator.HistoryIndex%cap(generator.History)] = generator.Generate()
 	generator.HistoryIndex++
 
-	//generator.Variation += 0.001
-	//generator.X = 2 * (rand.Float64() - 0.5) * (generator.Variation)
-	generator.X += 0.02
+	generator.Variation += 0.001
+	generator.X = 2 * (rand.Float64() - 0.5) * (generator.Variation)
+	//generator.X += 0.05
 }
 
 func (generator SinGenerator) String() string {
@@ -122,14 +123,14 @@ func converge(
 			addInstructionProbability},
 		{&ProgramInstructionMov{},
 			movInstructionProbability},
-		//{&ProgramInstructionDiv{},
-		//    divInstructionProbability},
+		{&ProgramInstructionDiv{},
+			divInstructionProbability},
 		{&ProgramInstructionMul{},
 			mulInstructionProbability},
 		{&ProgramInstructionNop{},
 			nopInstructionProbability},
-		//{&ProgramInstructionJumpGreaterThan{},
-		//    jumpGreaterThanInstructionProbability},
+		{&ProgramInstructionJumpGreaterThan{},
+			jumpGreaterThanInstructionProbability},
 		{&ProgramInstructionPow{},
 			powInstructionProbability},
 		{&ProgramInstructionCls{},
@@ -166,6 +167,8 @@ func converge(
 
 			ConsiderZero: 1e-6,
 
+			AvgPeriod: minReproduceAge,
+
 			TargetValueGenerator: valueGenerator,
 		}
 
@@ -175,11 +178,12 @@ func converge(
 	environment := SimpleEnvironment{
 		Rules: []Rules{
 			defaultSumulationRules,
+			defaultReapRules,
 			defaultAggressiveSelectionRules,
 			defaultReapRules,
-			defaultAggressiveReproduceRules,
+			defaultAggressiveReproduceRules(programInstructionVariants),
 			//defaultBacterialRules,
-			defaultMutateRules(programInstructionVariants),
+			//defaultMutateRules(programInstructionVariants),
 			//defaultReapRules,
 		},
 	}
@@ -229,9 +233,9 @@ func validate(
 }
 
 func getBest(population Population) Creature {
-	sort.Sort(ByEnergy(population))
+	sort.Sort(ByAvgError(population))
 
-	return population[len(population)-1]
+	return population[0]
 }
 
 func TestCanConvergeToConstantValue(t *testing.T) {
@@ -252,8 +256,8 @@ func TestCanEstimateLinearFunction(t *testing.T) {
 
 	population, _ := converge(
 		&LinearGenerator{
-			A: 8435.2,
-			B: 34614.69,
+			A: 32.0,
+			B: 16.0,
 		},
 		validator,
 		[]RandInstructionVariant{},

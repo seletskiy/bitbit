@@ -41,7 +41,7 @@ func (rules MarketRules) Apply(
 
 		//if err != nil {
 		//    break
-		//    logger.Log(Debug, "BONE EATING ERROR: %s", err)
+		//    Log(Debug, "BONE EATING ERROR: %s", err)
 		//}
 	}
 }

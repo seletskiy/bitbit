@@ -1,6 +1,8 @@
 package main
 
 type AggressiveReproduceRules struct {
+	MutateRules
+
 	MinAge int
 }
 
@@ -12,7 +14,9 @@ func (rules AggressiveReproduceRules) Apply(population *Population) {
 		}
 
 		if creature.GetAge() < rules.MinAge {
-			continue
+			if len(creature.GetParents()) != 0 {
+				continue
+			}
 		}
 
 		toReproduce = append(toReproduce, creature)
@@ -28,7 +32,13 @@ func (rules AggressiveReproduceRules) Apply(population *Population) {
 					break
 				}
 
-				logger.Log(Debug, "CREATURE<%p> reproduce to CREATURE<%p>", creature, child)
+				Log(Debug,
+					"CREATURE<%p> reproduce to CREATURE<%p>",
+					creature, child,
+				)
+
+				rules.applyMutation(child)
+
 				toReproduce = append(toReproduce, child)
 				*population = append(*population, child)
 

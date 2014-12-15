@@ -22,12 +22,18 @@ func (bacteria *ProgoBact) String() string {
 	ipsRegexp := regexp.MustCompile(
 		fmt.Sprintf("(?m) %03d ", bacteria.State.IPS))
 
+	var parent Creature
+	if len(bacteria.GetParents()) != 0 {
+		parent = bacteria.GetParents()[0]
+	}
+
 	result := ""
 	result += fmt.Sprintf(
-		"BACTERIA<%p> AGE %d DNA<%p>\nState:\n%s\nChromosome:\n%s\n",
+		"BACTERIA<%p> AGE %d DNA<%p>\nPARENT: <%p>\n\nState:\n%s\nChromosome:\n%s\n",
 		bacteria,
 		bacteria.GetAge(),
 		bacteria.GetChromosome().GetDNAs()[0],
+		parent,
 		bacteria.State,
 		ipsRegexp.ReplaceAllString(chromosomeString, " ==> "),
 	)
@@ -49,6 +55,8 @@ func (bacteria *ProgoBact) String() string {
 	if len(bacteria.Plasmids) > 0 {
 		result += "\n"
 	}
+
+	result += "END OF BACTERIA\n"
 
 	return result
 }

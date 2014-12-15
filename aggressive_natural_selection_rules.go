@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math"
 	"sort"
 )
@@ -14,37 +15,41 @@ type AggressiveNaturalSelectionRules struct {
 func (rules AggressiveNaturalSelectionRules) Apply(
 	population *Population,
 ) {
-	selected := []Creature{}
+	matures := Population{}
+	children := Population{}
 
 	for _, creature := range *population {
 		if creature.GetAge() < rules.MinAge {
+			children = append(children, creature)
 			continue
 		}
 
-		selected = append(selected, creature)
+		matures = append(matures, creature)
 	}
 
-	if len(selected) == 0 {
-		logger.Log(Debug, "SELECTION: population too young")
+	if len(matures) == 0 {
+		Log(Debug, "SELECTION: population too young")
 		return
+		//matures = *population
+		//children = Population{}
 	}
 
-	sort.Sort(ByEnergy(selected))
+	sort.Sort(ByEnergy(matures))
 
-	length := len(selected)
+	length := len(matures)
 	deadIndex := int(math.Min(
 		float64(length)*rules.DiePercentile,
 		float64(length-1),
 	))
-	percentileValue := selected[deadIndex].GetEnergy().GetFloat64()
-	//maxValue := selected[length-1].GetEnergy().GetFloat64()
+	percentileValue := matures[deadIndex].GetEnergy().GetFloat64()
 
-	//sorted := *population
-	//sort.Sort(ByEnergy(sorted))
+	Log(Debug,
+		"SELECTION: killing percentile: %f <%p>",
+		percentileValue,
+		matures[deadIndex],
+	)
 
-	logger.Log(Debug, "SELECTION: killing percentile: %f", percentileValue)
-
-	for _, creature := range *population {
+	for _, creature := range children {
 		energy := creature.GetEnergy().GetFloat64()
 		if creature.GetAge() >= rules.MinAge {
 			continue
@@ -54,7 +59,7 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 			continue
 		}
 
-		logger.Log(Debug, "SELECTION: CREATURE<%p> child is killed (%f <  %f)",
+		Log(Debug, "SELECTION: CREATURE<%p> child is killed (%f < %f)",
 			creature, energy, percentileValue,
 		)
 
@@ -66,40 +71,20 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 		float64(rules.BasePopulationSize)*(1-rules.DiePercentile),
 	))
 
-	for creatureIndex, creature := range selected {
+	log.Printf("SELECTION: matures %d", len(matures))
+	log.Printf("SELECTION: children %d", len(children))
+
+	for creatureIndex, creature := range matures {
 		energy := creature.GetEnergy().GetFloat64()
 
-		if creatureIndex > len(selected)-minAlive-1 {
+		if creatureIndex > len(matures)-minAlive-1 {
 			break
 		}
 
-		logger.Log(Debug, "SELECTION: CREATURE<%p> adult is killed (%f <= %f)",
+		Log(Debug, "SELECTION: CREATURE<%p> adult is killed (%f <= %f)",
 			creature, energy, percentileValue,
 		)
 
 		creature.Kill()
 	}
-
-	//matureIndex := 0
-	//for _, creature := range sorted {
-	//    energy := creature.GetEnergy().GetFloat64()
-	//    if creature.GetAge() >= rules.MinAge {
-	//        if matureIndex >= deadIndex {
-	//            if energy >= maxValue {
-	//                break
-	//            }
-	//        }
-	//        matureIndex++
-	//    }
-
-	//    if energy > percentileValue {
-	//        break
-	//    }
-
-	//    logger.Log(Debug, "SELECTION: CREATURE<%p> is killed (%f <= %f)",
-	//        creature, creature.GetEnergy().GetFloat64(), percentileValue,
-	//    )
-
-	//    creature.Kill()
-	//}
 }

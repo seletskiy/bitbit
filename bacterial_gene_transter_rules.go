@@ -53,7 +53,7 @@ func (rules BacterialGeneTransferRules) transferPlasmidsOnBirth(
 				append(creature.(Bacteria).GetPlasmids(), &plasmidCopy),
 			)
 
-			logger.Log(Debug, "CREATURE<%p> -> CREATURE<%p> plasmid #%d transfer on birth",
+			Log(Debug, "CREATURE<%p> -> CREATURE<%p> plasmid #%d transfer on birth",
 				parent,
 				creature,
 				plasmidIndex,
@@ -62,7 +62,7 @@ func (rules BacterialGeneTransferRules) transferPlasmidsOnBirth(
 			if rand.Float64() < rules.ReproduceLossProbability {
 				keepPlasmids = append(keepPlasmids, plasmid)
 
-				logger.Log(Debug, "CREATURE<%p> plasmid #%d lost",
+				Log(Debug, "CREATURE<%p> plasmid #%d lost",
 					parent,
 					plasmidIndex,
 				)
@@ -113,7 +113,7 @@ func (rules BacterialGeneTransferRules) extractPlasmids(
 			ReplaceIndex: codeStart,
 		}
 
-		logger.Log(Debug, "CREATURE<%p> plasmid extract: prefix %s code %s",
+		Log(Debug, "CREATURE<%p> plasmid extract: prefix %s code %s",
 			creature, code[:prefixLength], code[prefixLength:],
 		)
 
@@ -160,7 +160,7 @@ func (rules BacterialGeneTransferRules) exchangePlasmids(
 				break
 			}
 
-			logger.Log(Debug,
+			Log(Debug,
 				"CREATURE<%p> -> CREATURE<%p> plasmid #%d exchange",
 				creature, target, plasmidIndex,
 			)
@@ -209,14 +209,14 @@ func (rules BacterialGeneTransferRules) applyPlasmids(
 		chromosome := creature.GetChromosome().(*SimpleChromosome)
 		applied, applyIndex := plasmid.Apply(chromosome)
 		if applied {
-			logger.Log(Debug,
+			Log(Debug,
 				"CREATURE<%p> plasmid #%d applied to offset %d",
 				creature,
 				plasmidIndex,
 				applyIndex,
 			)
 		} else {
-			logger.Log(Debug,
+			Log(Debug,
 				"CREATURE<%p> plasmid #%d does not match",
 				creature,
 				plasmidIndex,
@@ -224,7 +224,7 @@ func (rules BacterialGeneTransferRules) applyPlasmids(
 		}
 
 		if rand.Float64() < rules.ApplyLossProbability {
-			logger.Log(Debug,
+			Log(Debug,
 				"CREATURE<%p> plasmid #%d lost",
 				creature, plasmidIndex,
 			)

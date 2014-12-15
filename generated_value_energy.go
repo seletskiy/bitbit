@@ -11,9 +11,10 @@ type ValueGenerator interface {
 	GetData(tableIndex, cellIndex int) float64
 }
 
-type ErrorGetterEnergy interface {
+type ErrorBasedEnergy interface {
 	GetCurrentError() float64
 	GetTotalError() float64
+	GetAvgError() float64
 }
 
 type GeneratedValueEnergy struct {
@@ -23,19 +24,30 @@ type GeneratedValueEnergy struct {
 	ConsiderZero         float64
 	CurrentValue         float64
 	Age                  int
-	TotalError           float64
+	Errors               []float64
+	AvgPeriod            int
 }
 
 func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
 	return math.Abs(origin.TargetValue - origin.CurrentValue)
 }
 
+func (origin *GeneratedValueEnergy) GetAvgError() float64 {
+	return origin.GetTotalError() / float64(len(origin.Errors)+1)
+
+}
+
 func (origin *GeneratedValueEnergy) GetTotalError() float64 {
-	return origin.TotalError + origin.GetCurrentError()
+	total := origin.GetCurrentError()
+	for _, value := range origin.Errors {
+		total += value
+	}
+
+	return total
 }
 
 func (origin GeneratedValueEnergy) GetFloat64() float64 {
-	return float64(origin.Age) / origin.GetTotalError()
+	return 1 / origin.GetAvgError()
 }
 
 func (origin GeneratedValueEnergy) Void() bool {
@@ -59,6 +71,7 @@ func (origin *GeneratedValueEnergy) Scatter(n int) []Energy {
 				TargetValueGenerator: origin.TargetValueGenerator,
 				TargetValue:          origin.TargetValue,
 				ConsiderZero:         origin.ConsiderZero,
+				AvgPeriod:            origin.AvgPeriod,
 			},
 		)
 	}
@@ -77,7 +90,9 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 		return nil
 	}
 
-	scattered[0].TransferTo(origin)
+	rest := scattered[0].(*GeneratedValueEnergy)
+
+	rest.TransferTo(origin)
 
 	if len(scattered) < 2 {
 		return nil
@@ -87,9 +102,9 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 }
 
 func (origin GeneratedValueEnergy) String() string {
-	return fmt.Sprintf("error: %f/%f; score: %f; base: %s\ngenerator: %s",
+	return fmt.Sprintf("error: %f~%f; score: %f; base: %s\ngenerator: %s",
 		origin.GetCurrentError(),
-		origin.GetTotalError(),
+		origin.GetAvgError(),
 		origin.GetFloat64(),
 		origin.Base,
 		origin.TargetValueGenerator,
@@ -98,7 +113,11 @@ func (origin GeneratedValueEnergy) String() string {
 
 func (origin *GeneratedValueEnergy) Simulate() {
 	if origin.Age > 0 {
-		origin.TotalError = origin.GetTotalError()
+		origin.Errors = append(origin.Errors, origin.GetCurrentError())
+		errorsCount := len(origin.Errors)
+		if errorsCount > origin.AvgPeriod {
+			origin.Errors = origin.Errors[errorsCount-origin.AvgPeriod-1 : errorsCount-1]
+		}
 	}
 
 	origin.CurrentValue = 0

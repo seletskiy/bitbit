@@ -14,6 +14,6 @@ func (rules SimulationRules) Apply(
 		creature.Simulate()
 	}
 
-	logger.Log(Debug, "SIMULATION COMPLETE")
-	logger.Log(Debug, "POPULATION (%d)\n%s", len(*population), *population)
+	Log(Debug, "SIMULATION COMPLETE")
+	Log(Debug, "POPULATION (%d)\n%s", len(*population), *population)
 }

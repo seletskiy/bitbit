@@ -29,7 +29,7 @@ func (energy *MarketEnergy) Split() Energy {
 		return nil
 	}
 
-	logger.Log(Debug, "ENERGY<%p> split: %s", energy, energy)
+	Log(Debug, "ENERGY<%p> split: %s", energy, energy)
 
 	connection := energy.MarketConnection
 

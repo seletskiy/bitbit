@@ -23,11 +23,11 @@ func (rules ReproduceRules) Apply(population *Population) {
 
 		child := creature.Reproduce()
 		if child == nil {
-			logger.Log(Debug, "CREATURE<%p> reproduce to nil", creature)
+			Log(Debug, "CREATURE<%p> reproduce to nil", creature)
 			continue
 		}
 
-		logger.Log(Debug, "CREATURE<%p> reproduce to CREATURE<%p>", creature, child)
+		Log(Debug, "CREATURE<%p> reproduce to CREATURE<%p>", creature, child)
 
 		*population = append(*population, child)
 	}

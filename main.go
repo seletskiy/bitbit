@@ -147,7 +147,7 @@ func main() {
 	//        }
 
 	//        for subtick := 0; subtick < 2; subtick++ {
-	//            logger.Log(Debug, "SIMULATION: tick start %d", tick)
+	//            Log(Debug, "SIMULATION: tick start %d", tick)
 
 	//            market.AddTransaction(Transaction{
 	//                Price:     prices[subtick],

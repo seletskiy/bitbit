@@ -12,7 +12,7 @@ func (program *ProgoDNA) EqGenes(a Gene, b Gene) bool {
 }
 
 func (program *ProgoDNA) Eval(state *ProgramState) error {
-	//state.Memory.Zero()
+	state.Memory.Zero()
 
 	err := program.Program.Eval(state)
 	if err != nil {
@@ -38,7 +38,7 @@ func (program *ProgoDNA) GetCode() []Gene {
 }
 
 func (program *ProgoDNA) Replace(offset int, newCode []Gene) {
-	logger.Log(Debug,
+	Log(Debug,
 		"DNA<%p> replace at offset %d: %s",
 		program.Program,
 		offset,

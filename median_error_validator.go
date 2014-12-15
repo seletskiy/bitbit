@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"sort"
 )
 
@@ -13,48 +12,41 @@ type MedianErrorValidator struct {
 func (validator MedianErrorValidator) Validate(
 	step string, population Population,
 ) bool {
-	populationErrors := []float64{}
+	nonEggs := []Creature{}
+
 	for _, creature := range population {
-		if creature.GetAge() <= 1 {
+		if creature.GetAge() <= 0 {
 			continue
 		}
 
-		absError := math.Abs(
-			1 / creature.GetEnergy().GetFloat64(),
-		)
-
-		populationErrors = append(populationErrors, absError)
+		nonEggs = append(nonEggs, creature)
 	}
 
-	if len(populationErrors) == 0 {
+	if len(nonEggs) == 0 {
 		return false
 	}
 
-	sort.Float64s(populationErrors)
+	sort.Sort(ByAvgError(nonEggs))
 
-	minError := populationErrors[0]
-	medianError := populationErrors[len(populationErrors)/2]
+	best := nonEggs[0].GetEnergy().(ErrorBasedEnergy)
+	median := nonEggs[len(nonEggs)/2].GetEnergy().(ErrorBasedEnergy)
 	totalError := 0.0
-	for _, val := range populationErrors {
-		totalError += val
+	for _, creature := range nonEggs {
+		totalError += creature.GetEnergy().(ErrorBasedEnergy).GetAvgError()
 	}
-
-	sorted := make(Population, len(population))
-	copy(sorted, population)
-	sort.Sort(ByEnergy(sorted))
 
 	fmt.Printf(
 		"[%10s] avg err: %10.4g med: %10.5g min: %10.5g (%4d/%4d) <%p>\n",
 		step,
-		totalError/float64(len(populationErrors)),
-		medianError,
-		minError,
-		len(populationErrors),
+		totalError/float64(len(nonEggs)),
+		median.GetAvgError(),
+		best.GetAvgError(),
+		len(nonEggs),
 		len(population),
-		sorted[len(sorted)-1],
+		nonEggs[0],
 	)
 
-	if minError <= validator.Threshold {
+	if best.GetAvgError() <= validator.Threshold {
 		return true
 	} else {
 		return false

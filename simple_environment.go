@@ -12,6 +12,6 @@ func (environment *SimpleEnvironment) Simulate(population *Population) {
 		rules.Apply(population)
 		elapsedTime := time.Duration(
 			int(time.Since(startTime)) / len(*population))
-		logger.Log(Debug, "TIME: %T took %s per creature", rules, elapsedTime)
+		Log(Debug, "TIME: %T took %s per creature", rules, elapsedTime)
 	}
 }

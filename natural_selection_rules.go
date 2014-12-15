@@ -37,7 +37,7 @@ func (environment NaturalSelectionRules) Apply(
 		if creature.CanKill(opponent) {
 			r := rand.Float64()
 			if r < environment.KillPossibility {
-				logger.Log(Debug,
+				Log(Debug,
 					"CONSUME: CREATURE<%p> eats CREATURE<%p>",
 					creature,
 					opponent,

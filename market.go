@@ -92,7 +92,7 @@ func (market *Market) GetMarketPrice() float64 {
 }
 
 func (market *Market) AddTransaction(t Transaction) {
-	logger.Log(Debug,
+	Log(Debug,
 		"MARKET: new transaction %fF %fV",
 		t.Price,
 		t.Volume,
@@ -167,7 +167,7 @@ func (market *Market) registerAndTransfer(
 		Goods: goods,
 	}
 
-	logger.Log(Debug,
+	Log(Debug,
 		`AGENT<%s> ACTIVES<%p> register on market`,
 		agent.Id,
 		agent.Actives,
@@ -208,7 +208,7 @@ func (market *Market) Unregister(id AgentId) error {
 
 	market.Positions = openedPositions
 
-	logger.Log(Debug, `AGENT<%s> unregister on market`, id)
+	Log(Debug, `AGENT<%s> unregister on market`, id)
 
 	delete(market.Agents, id)
 
@@ -237,7 +237,7 @@ func (market *Market) PlacePosition(
 		return err
 	}
 
-	logger.Log(Debug,
+	Log(Debug,
 		"MARKET: AGENT<%s> open position: %fF TTL %d",
 		id, amount, ttl,
 	)
@@ -260,7 +260,7 @@ func (market *Market) Simulate() error {
 	for _, position := range market.Positions {
 		if !market.evaluatePosition(position, marketPrice) {
 			openPositions = append(openPositions, position)
-			logger.Log(Debug,
+			Log(Debug,
 				"MARKET: open %fF",
 				position.Amount.Funds,
 			)
@@ -289,7 +289,7 @@ func (market *Market) evaluatePosition(
 			position.Amount.Goods,
 		)
 
-		logger.Log(Debug, "MARKET POSITION: closed %fG -> %fF (for %fF)",
+		Log(Debug, "MARKET POSITION: closed %fG -> %fF (for %fF)",
 			position.Amount.Funds,
 			position.Amount.Goods,
 			price,
@@ -300,7 +300,7 @@ func (market *Market) evaluatePosition(
 		position.Amount.Goods = position.Amount.Funds / price
 		position.Bought = true
 
-		logger.Log(Debug, "MARKET POSITION: entered %fF -> %fG (for %fF)",
+		Log(Debug, "MARKET POSITION: entered %fF -> %fG (for %fF)",
 			position.Amount.Funds,
 			position.Amount.Goods,
 			price,
@@ -352,7 +352,7 @@ func (actives *MarketActives) Transfer(
 		)
 	}
 
-	logger.Log(Debug,
+	Log(Debug,
 		"ACTIVES<%p> -> ACTIVES<%p> market transfer: %fF %fG",
 		actives,
 		target, funds, goods,

@@ -11,7 +11,7 @@ const (
 	initialGoods          = 10000.0
 
 	programLength               = 30
-	programMemorySize           = 10
+	programMemorySize           = 2
 	programReferenceProbability = 0.4
 	programValueVariance        = 100.0
 
@@ -33,24 +33,29 @@ const (
 	registerMutationProbability   = 0.3
 	jumpMutationProbability       = 0.2
 
-	smallChangeValueMutationProbability = 0.7
+	smallChangeValueMutationProbability = 0.6
 
 	dnaMutationProbability = 0.15
 	dnaMutationMaxSize     = 2
-	dnaMutationCount       = 3
+	dnaMutationCount       = 1
 
-	geneMutationProbability = 0.5
+	geneMutationProbability = 0.7
 
-	diePercentile = 0.99
+	diePercentile = 0.96
 
-	minSelectionAge = 10
-	minReproduceAge = 10
+	minSelectionAge = 5
+	minReproduceAge = 5
 
 	maxDataIndex = 1
 )
 
-var defaultAggressiveReproduceRules = AggressiveReproduceRules{
-	MinAge: minReproduceAge,
+func defaultAggressiveReproduceRules(
+	programInstructionVariants []RandInstructionVariant,
+) AggressiveReproduceRules {
+	return AggressiveReproduceRules{
+		MutateRules: defaultMutateRules(programInstructionVariants),
+		MinAge:      minReproduceAge,
+	}
 }
 
 var defaultBacterialRules = BacterialGeneTransferRules{
@@ -123,7 +128,7 @@ func defaultGeneMutator(gene Gene) Gene {
 	var mutatedArg ProgramInstructionArg
 	switch concreteOperand := instruction.GetArg(operandIndex).(type) {
 	case ProgramArgRegister:
-		//logger.Log(Debug, "MUTATE: GENE<%p> mutate as register", instruction)
+		//Log(Debug, "MUTATE: GENE<%p> mutate as register", instruction)
 		if rand.Float64() < smallChangeValueMutationProbability {
 			mutatedArg = concreteOperand
 			break
@@ -132,7 +137,7 @@ func defaultGeneMutator(gene Gene) Gene {
 			programMemorySize,
 		)
 	case Index:
-		//logger.Log(Debug, "MUTATE: GENE<%p> mutate as index", instruction)
+		//Log(Debug, "MUTATE: GENE<%p> mutate as index", instruction)
 		currentValue := concreteOperand.GetValue(nil).GetInt()
 		variance := currentValue
 		if rand.Float64() < smallChangeValueMutationProbability {
@@ -143,7 +148,7 @@ func defaultGeneMutator(gene Gene) Gene {
 			float64(rand.Intn(variance+1) - variance/2 + currentValue),
 		))
 	case FloatValue:
-		//logger.Log(Debug, "MUTATE: GENE<%p> mutate as float value", instruction)
+		//Log(Debug, "MUTATE: GENE<%p> mutate as float value", instruction)
 		currentValue := concreteOperand.GetValue(nil).GetFloat64()
 
 		variance := currentValue
@@ -155,7 +160,7 @@ func defaultGeneMutator(gene Gene) Gene {
 			2*(rand.Float64()-0.5)*variance + currentValue,
 		)
 	case ProgramArgReference:
-		//logger.Log(Debug, "MUTATE: GENE<%p> mutate as reference", instruction)
+		//Log(Debug, "MUTATE: GENE<%p> mutate as reference", instruction)
 		if rand.Float64() < smallChangeValueMutationProbability {
 			mutatedArg = concreteOperand
 			break
@@ -166,7 +171,7 @@ func defaultGeneMutator(gene Gene) Gene {
 			programMemorySize,
 		)
 	case ProgramArgJump:
-		//logger.Log(Debug, "MUTATE: GENE<%p> mutate as jump", instruction)
+		//Log(Debug, "MUTATE: GENE<%p> mutate as jump", instruction)
 		mutatedArg = RandProgramInstructionJumpValue(
 			programLength,
 		)

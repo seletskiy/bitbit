@@ -36,3 +36,28 @@ func (creatures ByAge) Swap(i, j int) {
 func (creatures ByAge) Less(i, j int) bool {
 	return creatures[i].GetAge() < creatures[j].GetAge()
 }
+
+type ByAvgError []Creature
+
+func (creatures ByAvgError) Len() int {
+	return len(creatures)
+}
+
+func (creatures ByAvgError) Swap(i, j int) {
+	creatures[i], creatures[j] = creatures[j], creatures[i]
+}
+
+func (creatures ByAvgError) Less(i, j int) bool {
+	if creatures[i].GetEnergy().Void() {
+		return true
+	}
+
+	if creatures[j].GetEnergy().Void() {
+		return false
+	}
+
+	a := creatures[i].GetEnergy().(ErrorBasedEnergy).GetAvgError()
+	b := creatures[j].GetEnergy().(ErrorBasedEnergy).GetAvgError()
+
+	return a < b
+}

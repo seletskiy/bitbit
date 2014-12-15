@@ -2,19 +2,15 @@ package main
 
 import "log"
 
-//var logger Logger = Nothing
-
-var logger Logger = Debug
-
-type Logger int
-
 const (
 	Nothing = iota
 	Debug
 )
 
-func (currentLevel Logger) Log(level int, format string, data ...interface{}) {
-	if int(currentLevel) < level {
+var CurrentLogLevel = Nothing
+
+func Log(level int, format string, data ...interface{}) {
+	if int(CurrentLogLevel) < level {
 		return
 	}
 

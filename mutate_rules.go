@@ -17,20 +17,20 @@ func (rules MutateRules) Apply(population *Population) {
 			continue
 		}
 
-		for _, dna := range creature.GetChromosome().GetDNAs() {
-			if rand.Float64() < rules.DNAMutationProbability {
-				logger.Log(Debug,
-					"CREATURE<%p> DNA<%p> mutate dna", creature, dna,
-				)
-				rules.mutateDNA(dna)
-			}
+		rules.applyMutation(creature)
+	}
+}
 
-			rules.mutateGenes(dna)
-
-			//logger.Log(Debug,
-			//    "CREATURE<%p> DNA<%p> mutate single gene", creature, dna,
-			//)
+func (rules MutateRules) applyMutation(creature Creature) {
+	for _, dna := range creature.GetChromosome().GetDNAs() {
+		if rand.Float64() < rules.DNAMutationProbability {
+			Log(Debug,
+				"CREATURE<%p> DNA<%p> mutate dna", creature, dna,
+			)
+			rules.mutateDNA(dna)
 		}
+
+		rules.mutateGenes(dna)
 	}
 }
 
@@ -61,8 +61,9 @@ func (rules MutateRules) mutateGenes(dna DNA) {
 			continue
 		}
 
-		logger.Log(Debug,
-			"DNA<%p> gene chosen to mutate: %v", dna, originGene,
+		Log(Debug,
+			"DNA<%p> gene chosen to mutate (%d): %v",
+			dna, geneIndex, originGene,
 		)
 
 		mutateGene := rules.GeneMutator(originGene)

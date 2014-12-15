@@ -25,7 +25,7 @@ func (rules ReapRules) Apply(
 		scattered = append(scattered, energy.Scatter(len(alive))...)
 	}
 
-	logger.Log(Debug, "REAPER: scattering %d energy items to %d creatures",
+	Log(Debug, "REAPER: scattering %d energy items to %d creatures",
 		len(scattered),
 		len(alive),
 	)
@@ -35,7 +35,7 @@ func (rules ReapRules) Apply(
 		singleBonus.TransferTo(alive[creatureIndex].GetEnergy())
 	}
 
-	logger.Log(Debug, "REAPER: %d dead", dead)
+	Log(Debug, "REAPER: %d dead", dead)
 
 	*population = alive
 }
