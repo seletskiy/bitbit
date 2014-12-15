@@ -6,6 +6,7 @@ type MutateRules struct {
 	GeneGenerator           func(amount int) []Gene
 	GeneMutator             func(gene Gene) Gene
 	DNAMutationMaxSize      int
+	DNAMutationCount        int
 	DNAMutationProbability  float64
 	GeneMutationProbability float64
 }
@@ -24,45 +25,52 @@ func (rules MutateRules) Apply(population *Population) {
 				rules.mutateDNA(dna)
 			}
 
-			if rand.Float64() < rules.GeneMutationProbability {
-				logger.Log(Debug,
-					"CREATURE<%p> DNA<%p> mutate single gene", creature, dna,
-				)
+			rules.mutateGenes(dna)
 
-				rules.mutateGene(dna)
-			}
+			//logger.Log(Debug,
+			//    "CREATURE<%p> DNA<%p> mutate single gene", creature, dna,
+			//)
 		}
 	}
 }
 
 func (rules MutateRules) mutateDNA(dna DNA) {
-	offset := dna.GetLength() - rules.DNAMutationMaxSize
-	length := rand.Intn(rules.DNAMutationMaxSize)
-	if offset <= 0 {
-		offset = dna.GetLength()
-		length = dna.GetLength()
-	}
+	mutiesCount := rules.DNAMutationCount
+	for mutiesCount > 0 {
+		offset := dna.GetLength() - rules.DNAMutationMaxSize
+		length := rand.Intn(rules.DNAMutationMaxSize)
+		if offset <= 0 {
+			offset = dna.GetLength()
+			length = dna.GetLength()
+		}
 
-	dna.Replace(
-		rand.Intn(offset),
-		rules.GeneGenerator(length+1),
-	)
+		dna.Replace(
+			rand.Intn(offset),
+			rules.GeneGenerator(length+1),
+		)
+
+		mutiesCount--
+	}
 }
 
-func (rules MutateRules) mutateGene(dna DNA) {
-	offset := rand.Intn(dna.GetLength())
+func (rules MutateRules) mutateGenes(dna DNA) {
+	for geneIndex := 0; geneIndex < dna.GetLength(); geneIndex++ {
+		originGene := dna.GetGene(geneIndex)
 
-	originGene := dna.GetGene(offset)
+		if rand.Float64() > rules.GeneMutationProbability {
+			continue
+		}
 
-	logger.Log(Debug,
-		"DNA<%p> gene chosen to mutate: %v", dna, originGene,
-	)
+		logger.Log(Debug,
+			"DNA<%p> gene chosen to mutate: %v", dna, originGene,
+		)
 
-	mutateGene := rules.GeneMutator(originGene)
+		mutateGene := rules.GeneMutator(originGene)
 
-	if mutateGene == nil {
-		return
+		if mutateGene == nil {
+			continue
+		}
+
+		dna.Replace(geneIndex, []Gene{mutateGene})
 	}
-
-	dna.Replace(offset, []Gene{mutateGene})
 }

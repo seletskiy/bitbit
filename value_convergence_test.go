@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"math"
 	"sort"
 	"testing"
 )
@@ -21,6 +21,10 @@ func (generator ConstGenerator) GetData(_, _ int) float64 {
 
 func (generator ConstGenerator) Simulate() {
 
+}
+
+func (generator ConstGenerator) String() string {
+	return fmt.Sprintf("%f", generator)
 }
 
 type LinearGenerator struct {
@@ -42,14 +46,62 @@ func (generator LinearGenerator) GetData(tableIndex, cellIndex int) float64 {
 }
 
 func (generator *LinearGenerator) Simulate() {
-	//generator.X += 0.1
-	generator.X = rand.Float64() * 100.0
+	generator.X += 0.001
+	//generator.X = rand.Float64() * 100.0
 }
 
 func (generator LinearGenerator) String() string {
 	return fmt.Sprintf("Y = %.3f X + %3.f = %.3f, X = %.3f",
 		generator.A,
 		generator.B,
+		generator.Generate(),
+		generator.X,
+	)
+}
+
+type SinGenerator struct {
+	History      []float64
+	HistoryIndex int
+	Variation    float64
+	Amplitude    float64
+	Period       float64
+	X            float64
+}
+
+func (generator *SinGenerator) Generate() float64 {
+	return generator.Amplitude * math.Sin(generator.Period*generator.X)
+}
+
+func (generator SinGenerator) GetData(tableIndex, cellIndex int) float64 {
+	switch tableIndex {
+	case 0:
+		if cellIndex == 0 {
+			return generator.X
+		}
+	case 1:
+		if cellIndex < len(generator.History) {
+			getIndex := generator.HistoryIndex - cellIndex
+
+			return generator.History[getIndex%cap(generator.History)]
+		}
+	}
+
+	return 0
+}
+
+func (generator *SinGenerator) Simulate() {
+	generator.History[generator.HistoryIndex%cap(generator.History)] = generator.Generate()
+	generator.HistoryIndex++
+
+	//generator.Variation += 0.001
+	//generator.X = 2 * (rand.Float64() - 0.5) * (generator.Variation)
+	generator.X += 0.02
+}
+
+func (generator SinGenerator) String() string {
+	return fmt.Sprintf("Y = %.3f SIN( %.3f X ) = %.3f, X = %.3f",
+		generator.Amplitude,
+		generator.Period,
 		generator.Generate(),
 		generator.X,
 	)
@@ -70,14 +122,16 @@ func converge(
 			addInstructionProbability},
 		{&ProgramInstructionMov{},
 			movInstructionProbability},
-		{&ProgramInstructionDiv{},
-			divInstructionProbability},
+		//{&ProgramInstructionDiv{},
+		//    divInstructionProbability},
 		{&ProgramInstructionMul{},
 			mulInstructionProbability},
 		{&ProgramInstructionNop{},
 			nopInstructionProbability},
-		{&ProgramInstructionJumpGreaterThan{},
-			jumpGreaterThanInstructionProbability},
+		//{&ProgramInstructionJumpGreaterThan{},
+		//    jumpGreaterThanInstructionProbability},
+		{&ProgramInstructionPow{},
+			powInstructionProbability},
 		{&ProgramInstructionCls{},
 			clsInstructionProbability},
 
@@ -139,7 +193,7 @@ func converge(
 		if validator.Validate("evolve", population) {
 			validated = validate(
 				valueGenerator,
-				population, validator, stabilityCheckLength)
+				&population, validator, stabilityCheckLength)
 		}
 
 		if validated {
@@ -154,7 +208,7 @@ func converge(
 
 func validate(
 	valueGenerator ValueGenerator,
-	population Population, validator PopulationValidator, ticks int,
+	population *Population, validator PopulationValidator, ticks int,
 ) bool {
 	environment := SimpleEnvironment{
 		Rules: []Rules{
@@ -166,12 +220,12 @@ func validate(
 
 	for ticks > 0 {
 		valueGenerator.Simulate()
-		environment.Simulate(&population)
+		environment.Simulate(population)
 
 		ticks--
 	}
 
-	return validator.Validate("validate", population)
+	return validator.Validate("validate", *population)
 }
 
 func getBest(population Population) Creature {
@@ -192,13 +246,38 @@ func TestCanConvergeToConstantValue(t *testing.T) {
 }
 
 func TestCanEstimateLinearFunction(t *testing.T) {
-	validator := MedianErrorValidator{Threshold: 0.001}
+	validator := MedianErrorValidator{
+		Threshold: 0.001,
+	}
 
 	population, _ := converge(
-		&LinearGenerator{A: 3.0, B: 0.0},
+		&LinearGenerator{
+			A: 8435.2,
+			B: 34614.69,
+		},
 		validator,
 		[]RandInstructionVariant{},
-		100,
+		10,
+	)
+
+	fmt.Printf("BEST:\n%s", getBest(population))
+}
+
+func TestCanEstimateSinFunction(t *testing.T) {
+	validator := MedianErrorValidator{
+		Threshold: 0.01,
+	}
+
+	population, _ := converge(
+		&SinGenerator{
+			Variation: 0.5,
+			Amplitude: 67.0,
+			Period:    1.0,
+			History:   make([]float64, 10),
+		},
+		validator,
+		[]RandInstructionVariant{},
+		50,
 	)
 
 	fmt.Printf("BEST:\n%s", getBest(population))

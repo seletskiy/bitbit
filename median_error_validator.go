@@ -15,16 +15,21 @@ func (validator MedianErrorValidator) Validate(
 ) bool {
 	populationErrors := []float64{}
 	for _, creature := range population {
-		if creature.GetAge() <= 0 {
+		if creature.GetAge() <= 1 {
 			continue
 		}
 
 		absError := math.Abs(
-			creature.GetEnergy().(ErrorGetterEnergy).GetError(),
+			1 / creature.GetEnergy().GetFloat64(),
 		)
-		//log.Printf("aaa %p %10.5f", creature, absError)
+
 		populationErrors = append(populationErrors, absError)
 	}
+
+	if len(populationErrors) == 0 {
+		return false
+	}
+
 	sort.Float64s(populationErrors)
 
 	minError := populationErrors[0]
@@ -34,17 +39,22 @@ func (validator MedianErrorValidator) Validate(
 		totalError += val
 	}
 
+	sorted := make(Population, len(population))
+	copy(sorted, population)
+	sort.Sort(ByEnergy(sorted))
+
 	fmt.Printf(
-		"[%10s] avg err: %10.4g med: %10.5f min: %10.5f (%4d/%4d)\n",
+		"[%10s] avg err: %10.4g med: %10.5g min: %10.5g (%4d/%4d) <%p>\n",
 		step,
 		totalError/float64(len(populationErrors)),
 		medianError,
 		minError,
 		len(populationErrors),
 		len(population),
+		sorted[len(sorted)-1],
 	)
 
-	if medianError <= validator.Threshold {
+	if minError <= validator.Threshold {
 		return true
 	} else {
 		return false

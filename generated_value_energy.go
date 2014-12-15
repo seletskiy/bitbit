@@ -12,7 +12,8 @@ type ValueGenerator interface {
 }
 
 type ErrorGetterEnergy interface {
-	GetError() float64
+	GetCurrentError() float64
+	GetTotalError() float64
 }
 
 type GeneratedValueEnergy struct {
@@ -21,21 +22,27 @@ type GeneratedValueEnergy struct {
 	TargetValue          float64
 	ConsiderZero         float64
 	CurrentValue         float64
-	Set                  bool
+	Age                  int
 	TotalError           float64
 }
 
-func (origin *GeneratedValueEnergy) GetError() float64 {
-	return origin.TotalError + math.Abs(
-		origin.TargetValue-origin.CurrentValue,
-	)
+func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
+	return math.Abs(origin.TargetValue - origin.CurrentValue)
+}
+
+func (origin *GeneratedValueEnergy) GetTotalError() float64 {
+	return origin.TotalError + origin.GetCurrentError()
 }
 
 func (origin GeneratedValueEnergy) GetFloat64() float64 {
-	return 1 / origin.GetError()
+	return float64(origin.Age) / origin.GetTotalError()
 }
 
 func (origin GeneratedValueEnergy) Void() bool {
+	if math.IsNaN(origin.GetCurrentError()) {
+		return true
+	}
+
 	if origin.Base.Void() {
 		return true
 	} else {
@@ -50,6 +57,7 @@ func (origin *GeneratedValueEnergy) Scatter(n int) []Energy {
 			&GeneratedValueEnergy{
 				Base:                 base,
 				TargetValueGenerator: origin.TargetValueGenerator,
+				TargetValue:          origin.TargetValue,
 				ConsiderZero:         origin.ConsiderZero,
 			},
 		)
@@ -79,8 +87,9 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 }
 
 func (origin GeneratedValueEnergy) String() string {
-	return fmt.Sprintf("error: %f; score: %f; base: %s\ngenerator: %s",
-		origin.GetError(),
+	return fmt.Sprintf("error: %f/%f; score: %f; base: %s\ngenerator: %s",
+		origin.GetCurrentError(),
+		origin.GetTotalError(),
 		origin.GetFloat64(),
 		origin.Base,
 		origin.TargetValueGenerator,
@@ -88,13 +97,13 @@ func (origin GeneratedValueEnergy) String() string {
 }
 
 func (origin *GeneratedValueEnergy) Simulate() {
-	if origin.Set {
-		origin.TotalError = origin.GetError()
+	if origin.Age > 0 {
+		origin.TotalError = origin.GetTotalError()
 	}
 
 	origin.CurrentValue = 0
 	origin.TargetValue = origin.TargetValueGenerator.Generate()
-	origin.Set = true
+	origin.Age++
 }
 
 func (origin *GeneratedValueEnergy) Free() {
