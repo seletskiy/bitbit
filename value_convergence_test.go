@@ -82,6 +82,9 @@ func (generator SinGenerator) GetData(tableIndex, cellIndex int) float64 {
 	case 1:
 		if cellIndex < len(generator.History) {
 			getIndex := generator.HistoryIndex - cellIndex
+			if getIndex < 0 {
+				getIndex = 0
+			}
 
 			return generator.History[getIndex%cap(generator.History)]
 		}
@@ -94,9 +97,7 @@ func (generator *SinGenerator) Simulate() {
 	generator.History[generator.HistoryIndex%cap(generator.History)] = generator.Generate()
 	generator.HistoryIndex++
 
-	generator.Variation += 0.001
-	generator.X = 2 * (rand.Float64() - 0.5) * (generator.Variation)
-	//generator.X += 0.05
+	generator.X += 0.05
 }
 
 func (generator SinGenerator) String() string {
@@ -123,6 +124,8 @@ func converge(
 			addInstructionProbability},
 		{&ProgramInstructionMov{},
 			movInstructionProbability},
+		{&ProgramInstructionZero{},
+			zeroInstructionProbability},
 		{&ProgramInstructionDiv{},
 			divInstructionProbability},
 		{&ProgramInstructionMul{},
@@ -205,6 +208,8 @@ func converge(
 		}
 
 		tick++
+
+		fmt.Printf("BEST:\n%s", getBest(population))
 	}
 
 	return population, tick
@@ -217,7 +222,7 @@ func validate(
 	environment := SimpleEnvironment{
 		Rules: []Rules{
 			defaultSumulationRules,
-			//defaultBacterialRules,
+			defaultBacterialRules,
 			defaultReapRules,
 		},
 	}
@@ -254,7 +259,7 @@ func TestCanEstimateLinearFunction(t *testing.T) {
 		Threshold: 0.001,
 	}
 
-	population, _ := converge(
+	_, _ = converge(
 		&LinearGenerator{
 			A: 32.0,
 			B: 16.0,
@@ -263,26 +268,22 @@ func TestCanEstimateLinearFunction(t *testing.T) {
 		[]RandInstructionVariant{},
 		10,
 	)
-
-	fmt.Printf("BEST:\n%s", getBest(population))
 }
 
 func TestCanEstimateSinFunction(t *testing.T) {
 	validator := MedianErrorValidator{
-		Threshold: 0.01,
+		Threshold: 0.001,
 	}
 
-	population, _ := converge(
+	_, _ = converge(
 		&SinGenerator{
 			Variation: 0.5,
 			Amplitude: 67.0,
 			Period:    1.0,
-			History:   make([]float64, 10),
+			History:   make([]float64, 1000),
 		},
 		validator,
 		[]RandInstructionVariant{},
 		50,
 	)
-
-	fmt.Printf("BEST:\n%s", getBest(population))
 }

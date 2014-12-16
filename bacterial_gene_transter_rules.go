@@ -13,6 +13,8 @@ type BacterialGeneTransferRules struct {
 	ExchangePlasmidsProbability   float64
 	MinAgeForExchange             int
 	PlasmidPrefixLengthProportion float64
+	MinPlasmidPrefixLength        int
+	MaxPlasmidLength              int
 }
 
 func (rules BacterialGeneTransferRules) Apply(
@@ -48,6 +50,7 @@ func (rules BacterialGeneTransferRules) transferPlasmidsOnBirth(
 			plasmidCopy := *plasmid
 			plasmidCopy.Applied = false
 			plasmidCopy.Self = false
+			plasmidCopy.Age++
 
 			creature.(Bacteria).SetPlasmids(
 				append(creature.(Bacteria).GetPlasmids(), &plasmidCopy),
@@ -90,6 +93,9 @@ func (rules BacterialGeneTransferRules) extractPlasmids(
 
 		codeStart := rand.Intn(chromosome.GetLength() - 1)
 		codeLength := rand.Intn(chromosome.GetLength() - codeStart)
+		if codeLength > rules.MaxPlasmidLength {
+			codeLength = rules.MaxPlasmidLength
+		}
 
 		if codeLength == 0 {
 			return
@@ -100,8 +106,8 @@ func (rules BacterialGeneTransferRules) extractPlasmids(
 			code[i] = chromosome.GetDominantGene(codeStart + i)
 		}
 
-		prefixLength := rand.Intn(
-			int(float64(codeLength)*rules.PlasmidPrefixLengthProportion) + 1)
+		prefixLength := rules.MinPlasmidPrefixLength + rand.Intn(
+			int(float64(codeLength)*rules.PlasmidPrefixLengthProportion)+1)
 
 		newPlasmid := &Plasmid{
 			Id:           rand.Int63(),
@@ -205,6 +211,8 @@ func (rules BacterialGeneTransferRules) applyPlasmids(
 		if plasmid.Applied {
 			return
 		}
+
+		plasmid.AppliedCount++
 
 		chromosome := creature.GetChromosome().(*SimpleChromosome)
 		applied, applyIndex := plasmid.Apply(chromosome)

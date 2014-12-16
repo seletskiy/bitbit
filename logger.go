@@ -7,6 +7,7 @@ const (
 	Debug
 )
 
+//var CurrentLogLevel = Debug
 var CurrentLogLevel = Nothing
 
 func Log(level int, format string, data ...interface{}) {

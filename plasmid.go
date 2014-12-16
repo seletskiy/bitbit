@@ -14,6 +14,8 @@ type Plasmid struct {
 	Prefix       []Gene
 	Code         []Gene
 	ReplaceIndex int
+	AppliedCount int
+	Age          int
 }
 
 func (p *Plasmid) Apply(chromosome *SimpleChromosome) (bool, int) {
@@ -30,6 +32,13 @@ func (p *Plasmid) Apply(chromosome *SimpleChromosome) (bool, int) {
 
 func (p *Plasmid) String() string {
 	result := make([]string, 0)
+
+	result = append(result,
+		fmt.Sprintf(
+			"~ AGE %d APPLIED %d",
+			p.Age, p.AppliedCount,
+		),
+	)
 
 	foreign := ' '
 	if p.Exchanged {
