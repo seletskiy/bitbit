@@ -48,7 +48,7 @@ func (generator LinearGenerator) GetData(tableIndex, cellIndex int) float64 {
 
 func (generator *LinearGenerator) Simulate() {
 	//generator.X += 0.001
-	generator.X = 2 * (rand.Float64() - 0.5) * 100.0
+	generator.X = 2 * (rand.Float64() - 0.5) * 1000.0
 }
 
 func (generator LinearGenerator) String() string {
@@ -124,8 +124,10 @@ func converge(
 			addInstructionProbability},
 		{&ProgramInstructionMov{},
 			movInstructionProbability},
-		{&ProgramInstructionZero{},
-			zeroInstructionProbability},
+		//{&ProgramInstructionZero{},
+		//    zeroInstructionProbability},
+		{&ProgramInstructionMod{},
+			modInstructionProbability},
 		{&ProgramInstructionDiv{},
 			divInstructionProbability},
 		{&ProgramInstructionMul{},
@@ -150,8 +152,6 @@ func converge(
 
 	programLayout := RandProgramLayout(programLength)
 
-	//externalValueStore := ValueStore{}
-
 	population = make(Population, initialPopulationSize)
 	for i := 0; i < initialPopulationSize; i++ {
 		program := RandProgram(
@@ -168,7 +168,7 @@ func converge(
 				Potential: 1,
 			},
 
-			ConsiderZero: 1e-6,
+			ConsiderZero: 1e-12,
 
 			AvgPeriod: minReproduceAge,
 
@@ -222,7 +222,7 @@ func validate(
 	environment := SimpleEnvironment{
 		Rules: []Rules{
 			defaultSumulationRules,
-			defaultBacterialRules,
+			//defaultBacterialRules,
 			defaultReapRules,
 		},
 	}
@@ -256,7 +256,7 @@ func TestCanConvergeToConstantValue(t *testing.T) {
 
 func TestCanEstimateLinearFunction(t *testing.T) {
 	validator := MedianErrorValidator{
-		Threshold: 0.001,
+		Threshold: 0.1,
 	}
 
 	_, _ = converge(

@@ -15,6 +15,7 @@ type ErrorBasedEnergy interface {
 	GetCurrentError() float64
 	GetTotalError() float64
 	GetAvgError() float64
+	GetMaxError() float64
 }
 
 type GeneratedValueEnergy struct {
@@ -28,8 +29,16 @@ type GeneratedValueEnergy struct {
 	AvgPeriod            int
 }
 
+func (origin *GeneratedValueEnergy) GetMaxError() float64 {
+	max := origin.GetCurrentError()
+	for _, val := range origin.Errors {
+		max = math.Max(max, math.Abs(val))
+	}
+	return max
+}
+
 func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
-	return math.Abs(origin.TargetValue - origin.CurrentValue)
+	return math.Pow(origin.TargetValue-origin.CurrentValue, 2)
 }
 
 func (origin *GeneratedValueEnergy) GetAvgError() float64 {
@@ -104,7 +113,7 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 func (origin GeneratedValueEnergy) String() string {
 	return fmt.Sprintf("error: %f~%f; score: %f; base: %s\ngenerator: %s",
 		origin.GetCurrentError(),
-		origin.GetAvgError(),
+		origin.GetMaxError(),
 		origin.GetFloat64(),
 		origin.Base,
 		origin.TargetValueGenerator,

@@ -40,7 +40,7 @@ func (program *ProgoDNA) GetCode() []Gene {
 func (program *ProgoDNA) Replace(offset int, newCode []Gene) {
 	Log(Debug,
 		"DNA<%p> replace at offset %d: %s",
-		program.Program,
+		program,
 		offset,
 		newCode,
 	)

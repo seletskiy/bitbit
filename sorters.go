@@ -61,3 +61,28 @@ func (creatures ByAvgError) Less(i, j int) bool {
 
 	return a < b
 }
+
+type ByMaxError []Creature
+
+func (creatures ByMaxError) Len() int {
+	return len(creatures)
+}
+
+func (creatures ByMaxError) Swap(i, j int) {
+	creatures[i], creatures[j] = creatures[j], creatures[i]
+}
+
+func (creatures ByMaxError) Less(i, j int) bool {
+	if creatures[i].GetEnergy().Void() {
+		return true
+	}
+
+	if creatures[j].GetEnergy().Void() {
+		return false
+	}
+
+	a := creatures[i].GetEnergy().(ErrorBasedEnergy).GetMaxError()
+	b := creatures[j].GetEnergy().(ErrorBasedEnergy).GetMaxError()
+
+	return a < b
+}

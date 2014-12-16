@@ -7,8 +7,9 @@ const (
 	Debug
 )
 
-//var CurrentLogLevel = Debug
-var CurrentLogLevel = Nothing
+var CurrentLogLevel = Debug
+
+//var CurrentLogLevel = Nothing
 
 func Log(level int, format string, data ...interface{}) {
 	if int(CurrentLogLevel) < level {

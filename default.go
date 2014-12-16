@@ -21,6 +21,7 @@ const (
 	addInstructionProbability             = 0.8
 	movInstructionProbability             = 0.8
 	zeroInstructionProbability            = 0.01
+	modInstructionProbability             = 0.1
 	divInstructionProbability             = 0.1
 	mulInstructionProbability             = 0.5
 	nopInstructionProbability             = 1.0
@@ -35,21 +36,22 @@ const (
 	jumpMutationProbability       = 0.2
 
 	smallMutationValueMutationProbability = 0.6
-	smallMutationVariance                 = 1000
+	smallMutationVariance                 = 1 / 1000.0
 	offsetMutationProbability             = 0.3
+	basicMutationVariance                 = 10.0
 
-	dnaMutationProbability = 0.6
+	dnaMutationProbability = 0.3
 	dnaMutationMaxSize     = 1
 	dnaMutationCount       = 2
 
-	geneMutationProbability = 0.7
+	geneMutationProbability = 0.3
 
 	diePercentile = 0.96
 
 	minSelectionAge = 5
 	minReproduceAge = 5
 
-	maxDataIndex = 1000
+	maxDataIndex = 10
 )
 
 func defaultAggressiveReproduceRules(
@@ -134,10 +136,6 @@ func defaultGeneMutator(gene Gene) Gene {
 	switch concreteOperand := instruction.GetArg(operandIndex).(type) {
 	case ProgramArgRegister:
 		Log(Debug, "MUTATE: GENE<%p> mutate as register", instruction)
-		if rand.Float64() < smallMutationValueMutationProbability {
-			mutatedArg = concreteOperand
-			break
-		}
 		mutatedArg = RandProgramInstructionOutValue(
 			programMemorySize,
 		)
@@ -156,17 +154,15 @@ func defaultGeneMutator(gene Gene) Gene {
 		Log(Debug, "MUTATE: GENE<%p> mutate as float value", instruction)
 		currentValue := concreteOperand.GetValue(nil).GetFloat64()
 
-		variance := currentValue
-		if rand.Float64() < smallMutationValueMutationProbability {
-			variance = math.Max(
-				1/smallMutationVariance,
-				math.Abs(currentValue/smallMutationVariance),
-			)
+		offset := 0.0
+		variance := basicMutationVariance
+		if rand.Float64() < offsetMutationProbability {
+			variance = currentValue
+			offset = currentValue
 		}
 
-		offset := 0.0
-		if rand.Float64() < offsetMutationProbability {
-			offset = currentValue
+		if rand.Float64() < smallMutationValueMutationProbability {
+			variance = math.Abs(currentValue * smallMutationVariance)
 		}
 
 		mutatedArg = FloatValue(
@@ -174,10 +170,6 @@ func defaultGeneMutator(gene Gene) Gene {
 		)
 	case ProgramArgReference:
 		Log(Debug, "MUTATE: GENE<%p> mutate as reference", instruction)
-		if rand.Float64() < smallMutationValueMutationProbability {
-			mutatedArg = concreteOperand
-			break
-		}
 		mutatedArg = RandProgramInstructionInValue(
 			defaultVarianceGenerator,
 			programReferenceProbability,
