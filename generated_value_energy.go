@@ -38,7 +38,7 @@ func (origin *GeneratedValueEnergy) GetMaxError() float64 {
 }
 
 func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
-	return math.Pow(origin.TargetValue-origin.CurrentValue, 2)
+	return math.Abs(origin.TargetValue - origin.CurrentValue)
 }
 
 func (origin *GeneratedValueEnergy) GetAvgError() float64 {
@@ -56,7 +56,12 @@ func (origin *GeneratedValueEnergy) GetTotalError() float64 {
 }
 
 func (origin GeneratedValueEnergy) GetFloat64() float64 {
-	return 1 / origin.GetAvgError()
+	squareErrors := math.Pow(origin.GetCurrentError(), 2)
+	for _, value := range origin.Errors {
+		squareErrors += math.Pow(value, 2)
+	}
+
+	return 1 / squareErrors
 }
 
 func (origin GeneratedValueEnergy) Void() bool {

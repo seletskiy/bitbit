@@ -12,7 +12,7 @@ const (
 
 	programLength               = 30
 	programMemorySize           = 10
-	programReferenceProbability = 0.4
+	programReferenceProbability = 0.3
 	programValueVariance        = 100.0
 
 	bootstrapFunds = 10.0
@@ -44,7 +44,7 @@ const (
 	dnaMutationMaxSize     = 1
 	dnaMutationCount       = 2
 
-	geneMutationProbability = 0.3
+	geneMutationProbability = 0.2
 
 	diePercentile = 0.96
 

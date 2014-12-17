@@ -26,27 +26,27 @@ func (validator MedianErrorValidator) Validate(
 		return false
 	}
 
-	sort.Sort(ByAvgError(nonEggs))
+	sort.Sort(ByMedianError(nonEggs))
 
 	best := nonEggs[0].GetEnergy().(ErrorBasedEnergy)
 	median := nonEggs[len(nonEggs)/2].GetEnergy().(ErrorBasedEnergy)
 	totalError := 0.0
 	for _, creature := range nonEggs {
-		totalError += creature.GetEnergy().(ErrorBasedEnergy).GetAvgError()
+		totalError += creature.GetEnergy().(ErrorBasedEnergy).GetMedianError()
 	}
 
 	fmt.Printf(
 		"[%10s] avg err: %10.4g med: %10.5g min: %10.5g (%4d/%4d) <%p>\n",
 		step,
 		totalError/float64(len(nonEggs)),
-		median.GetAvgError(),
-		best.GetAvgError(),
+		median.GetMedianError(),
+		best.GetMedianError(),
 		len(nonEggs),
 		len(population),
 		nonEggs[0],
 	)
 
-	if best.GetAvgError() <= validator.Threshold {
+	if best.GetMedianError() <= validator.Threshold {
 		return true
 	} else {
 		return false
