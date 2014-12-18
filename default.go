@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	initialPopulationSize = 1000
+	initialPopulationSize = 100
 	initialFunds          = 100000.0
 	initialGoods          = 10000.0
 
@@ -46,7 +46,7 @@ const (
 
 	geneMutationProbability = 0.2
 
-	diePercentile = 0.96
+	diePercentile = 0.90
 
 	minSelectionAge = 5
 	minReproduceAge = 5
@@ -67,10 +67,10 @@ var defaultBacterialRules = BacterialGeneTransferRules{
 	BirthTransferProbability:      0.5,
 	ReproduceLossProbability:      0.01,
 	TransferLossProbability:       0.02,
-	ApplyPlasmidProbability:       0.3,
+	ApplyPlasmidProbability:       1.3,
 	ApplyLossProbability:          0.00,
 	MaxPlasmidsNumber:             3,
-	PlasmidPerAge:                 50,
+	PlasmidPerAge:                 30,
 	ExchangePlasmidsProbability:   0.3,
 	MinAgeForExchange:             5,
 	PlasmidPrefixLengthProportion: 0.3,
@@ -82,6 +82,13 @@ var defaultAggressiveSelectionRules = AggressiveNaturalSelectionRules{
 	DiePercentile:      diePercentile,
 	MinAge:             minSelectionAge,
 	BasePopulationSize: initialPopulationSize,
+}
+
+var defaultEloRatingsRules = EloRules{
+	DrawThreshold:     0.0001,
+	TopCount:          10,
+	StrongProbability: 0.7,
+	OpponentVariance:  5,
 }
 
 func defaultVarianceGenerator() float64 {

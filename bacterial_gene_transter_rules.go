@@ -50,7 +50,7 @@ func (rules BacterialGeneTransferRules) transferPlasmidsOnBirth(
 			plasmidCopy := *plasmid
 			plasmidCopy.Applied = false
 			plasmidCopy.Self = false
-			plasmidCopy.Age++
+			plasmidCopy.Age = plasmidCopy.Age + 1
 
 			creature.(Bacteria).SetPlasmids(
 				append(creature.(Bacteria).GetPlasmids(), &plasmidCopy),
@@ -196,27 +196,26 @@ func (rules BacterialGeneTransferRules) applyPlasmids(
 	population *Population,
 ) {
 	for _, creature := range *population {
-		if rand.Float64() < rules.ApplyPlasmidProbability {
-			return
+		if rand.Float64() > rules.ApplyPlasmidProbability {
+			continue
 		}
 
 		plasmids := creature.(Bacteria).GetPlasmids()
 		if len(plasmids) == 0 {
-			return
+			continue
 		}
 
 		plasmidIndex := rand.Intn(len(plasmids))
 		plasmid := plasmids[plasmidIndex]
 
 		if plasmid.Applied {
-			return
+			continue
 		}
-
-		plasmid.AppliedCount++
 
 		chromosome := creature.GetChromosome().(*SimpleChromosome)
 		applied, applyIndex := plasmid.Apply(chromosome)
 		if applied {
+			plasmid.AppliedCount++
 			Log(Debug,
 				"CREATURE<%p> plasmid #%d applied to offset %d",
 				creature,

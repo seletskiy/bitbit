@@ -38,30 +38,32 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 		float64(adultsCount)*rules.DiePercentile,
 		float64(adultsCount-1),
 	))
-	percentileValue := adults[deadIndex].GetEnergy().GetFloat64()
+
+	percentileValue := adults[deadIndex].GetEnergy().(EloBasedEnergy).GetEloScore()
 
 	Log(Debug,
-		"SELECTION: killing percentile: %f <%p>",
+		"SELECTION: killing percentile: %d <%p>",
 		percentileValue,
 		adults[deadIndex],
 	)
 
-	for _, creature := range children {
-		energy := creature.GetEnergy().GetFloat64()
-		if creature.GetAge() >= rules.MinAge {
-			continue
-		}
+	//for _, creature := range children {
+	//    score := creature.GetEnergy().(EloBasedEnergy).GetEloScore()
 
-		if energy >= percentileValue {
-			continue
-		}
+	//    if creature.GetAge() <= rules.MinAge {
+	//        continue
+	//    }
 
-		creature.Kill()
+	//    if score >= percentileValue {
+	//        continue
+	//    }
 
-		Log(Debug, "SELECTION: CREATURE<%p> child is killed (%f < %f)",
-			creature, energy, percentileValue,
-		)
-	}
+	//    creature.Kill()
+
+	//    Log(Debug, "SELECTION: CREATURE<%p> child is killed (%d < %d)",
+	//        creature, score, percentileValue,
+	//    )
+	//}
 
 	minAliveCount := int(math.Max(
 		1.0,
@@ -69,20 +71,20 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 	))
 
 	for creatureIndex, creature := range adults {
-		energy := creature.GetEnergy().GetFloat64()
+		score := creature.GetEnergy().(EloBasedEnergy).GetEloScore()
 
 		if creatureIndex > len(adults)-minAliveCount-1 {
 			break
 		}
 
-		if energy >= percentileValue {
+		if score > percentileValue {
 			continue
 		}
 
 		creature.Kill()
 
-		Log(Debug, "SELECTION: CREATURE<%p> adult is killed (%f < %f)",
-			creature, energy, percentileValue,
+		Log(Debug, "SELECTION: CREATURE<%p> adult is killed (%d < %d)",
+			creature, score, percentileValue,
 		)
 	}
 }

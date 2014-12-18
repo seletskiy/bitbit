@@ -1,97 +1,105 @@
 package main
 
 import (
-	"container/list"
-	"fmt"
-	"math/rand"
-	"strings"
+	"math"
+	"sort"
 )
 
 type EloRules struct {
-}
-
-type EloRatings struct {
-	*list.List
+	DrawThreshold     float64
 	TopCount          int
 	StrongProbability float64
 	OpponentVariance  float64
 }
 
-type EloPlayer struct {
-	Player Creature
-	Score  float64
-}
-
-func (ratings *EloRatings) Update(winner, looser *EloPlayer) {
-	for mark := ratings.Front(); mark != nil; mark = mark.Next() {
-		if mark.Score < winner.Score {
-			ratings.MoveBefore(winner.Player, mark)
-		}
-	}
-
-	for mark := ratings.Front(); mark != nil; mark = mark.Next() {
-		if mark.Score > looser.Score {
-			ratings.MoveAfter(looser.Player, mark)
-		}
-	}
-}
-
-func (ratings *EloRatings) String() string {
-	result := make([]string, 0)
-
-	for rating := ratings.Front(); rating != nil; rating = rating.Next() {
-		if len(result) > ratings.TopCount {
-			break
-		}
-
-		concrete := rating.Value.(*EloPlayer)
-		result = append(
-			result,
-			fmt.Sprintf(
-				"%4d %7.3f",
-				concrete.Score,
-				concrete.Player.GetEnergy().GetFloat64(),
-			),
-		)
-	}
-
-	return strings.Join(result, "\n")
-}
-
-func (ratings *EloRatings) ChooseOpponent(player *EloPlayer) *EloPlayer {
-	index := 0
-	opponents := make([]*list.Element, ratings.Len())
-	for mark := ratings.Front(); mark != nil; mark = mark.Next() {
-		opponents[index] = mark
-		if mark == player {
-			break
-		} else {
-			index++
-		}
-	}
-
-	randValue := 2 * (rand.Float64() - ratings.StrongProbability) *
-		ratings.OpponentVariance
-	if randValue > 0 {
-		randValue += 1
-	} else {
-		randValue -= 1
-	}
-
-	chosenIndex := int(randValue) + index
-
-	if chosenIndex < 0 {
-		chosenIndex = 0
-	}
-
-	if chosenIndex >= len(opponents) {
-		chosenIndex = len(opponents) - 1
-	}
-
-	return opponents[chosenIndex]
-}
-
 func (rules EloRules) Apply(
 	population *Population,
 ) {
+	sort.Sort(ByEnergy(*population))
+
+	eloPlayers := make([]*EloPlayer, len(*population))
+	for i, creature := range *population {
+		eloPlayers[i] = &EloPlayer{
+			Player: creature,
+			Score:  creature.GetEnergy().(EloBasedEnergy).GetEloScore(),
+		}
+	}
+
+	eloRatings := NewEloRatings(eloPlayers)
+	eloRatings.StrongProbability = rules.StrongProbability
+	eloRatings.OpponentVariance = rules.OpponentVariance
+
+	for _, player := range eloPlayers {
+		versus := eloRatings.ChooseOpponent(player)
+
+		playerEnergy := player.Player.(Creature).GetEnergy()
+		versusEnergy := versus.Player.(Creature).GetEnergy()
+
+		Log(Debug,
+			"ELO: CREATURE<%p> %4d (%f) vs CREATURE<%p> %4d (%f)",
+			player.Player,
+			playerEnergy.(EloBasedEnergy).GetEloScore(),
+			playerEnergy.GetFloat64(),
+			versus.Player,
+			versusEnergy.(EloBasedEnergy).GetEloScore(),
+			versusEnergy.GetFloat64(),
+		)
+
+		playerEnergyValue := playerEnergy.GetFloat64()
+		versusEnergyValue := versusEnergy.GetFloat64()
+
+		energyValueDiff := math.Abs(1.0 - playerEnergyValue/versusEnergyValue)
+
+		if energyValueDiff > rules.DrawThreshold {
+			if playerEnergyValue > versusEnergyValue {
+				player.Score = eloRatings.Compute(player, versus, EloMatchWin)
+				versus.Score = eloRatings.Compute(versus, player, EloMatchLoss)
+
+				Log(Debug,
+					"ELO: CREATURE<%p> WIN -> %d",
+					player.Player,
+					player.Score,
+				)
+			} else {
+				player.Score = eloRatings.Compute(player, versus, EloMatchLoss)
+				versus.Score = eloRatings.Compute(versus, player, EloMatchWin)
+
+				Log(Debug,
+					"ELO: CREATURE<%p> LOSS -> %d",
+					player.Player,
+					player.Score,
+				)
+			}
+		} else {
+			player.Score = eloRatings.Compute(player, versus, EloMatchDraw)
+			versus.Score = eloRatings.Compute(versus, player, EloMatchDraw)
+			Log(Debug, "ELO: CREATURE<%p> DRAW -> %d", player, player.Score)
+		}
+
+		eloRatings.Update(player)
+		eloRatings.Update(versus)
+
+		player.Player.(Creature).GetEnergy().(EloBasedEnergy).SetEloScore(
+			player.Score,
+		)
+
+		versus.Player.(Creature).GetEnergy().(EloBasedEnergy).SetEloScore(
+			versus.Score,
+		)
+	}
+
+	index := 0
+	for ptr := eloRatings.Front(); ptr != nil; ptr = ptr.Next() {
+		//if index >= rules.TopCount {
+		//    break
+		//}
+
+		Log(Debug,
+			"ELO: TOP | %4d  %f  CREATURE<%p>",
+			int(ptr.Value.(*EloPlayer).Score),
+			ptr.Value.(*EloPlayer).Player.(Creature).GetEnergy().GetFloat64(),
+			ptr.Value.(*EloPlayer).Player,
+		)
+		index++
+	}
 }

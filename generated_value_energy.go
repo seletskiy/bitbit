@@ -13,55 +13,23 @@ type ValueGenerator interface {
 
 type ErrorBasedEnergy interface {
 	GetCurrentError() float64
-	GetTotalError() float64
-	GetAvgError() float64
-	GetMaxError() float64
 }
 
 type GeneratedValueEnergy struct {
-	Base                 Energy
+	*EloEnergy
 	TargetValueGenerator ValueGenerator
 	TargetValue          float64
-	ConsiderZero         float64
+	ZeroThreshold        float64
 	CurrentValue         float64
 	Age                  int
-	Errors               []float64
-	AvgPeriod            int
-}
-
-func (origin *GeneratedValueEnergy) GetMaxError() float64 {
-	max := origin.GetCurrentError()
-	for _, val := range origin.Errors {
-		max = math.Max(max, math.Abs(val))
-	}
-	return max
 }
 
 func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
 	return math.Abs(origin.TargetValue - origin.CurrentValue)
 }
 
-func (origin *GeneratedValueEnergy) GetAvgError() float64 {
-	return origin.GetTotalError() / float64(len(origin.Errors)+1)
-
-}
-
-func (origin *GeneratedValueEnergy) GetTotalError() float64 {
-	total := origin.GetCurrentError()
-	for _, value := range origin.Errors {
-		total += value
-	}
-
-	return total
-}
-
 func (origin GeneratedValueEnergy) GetFloat64() float64 {
-	squareErrors := math.Pow(origin.GetCurrentError(), 2)
-	for _, value := range origin.Errors {
-		squareErrors += math.Pow(value, 2)
-	}
-
-	return 1 / squareErrors
+	return -origin.GetCurrentError()
 }
 
 func (origin GeneratedValueEnergy) Void() bool {
@@ -69,23 +37,22 @@ func (origin GeneratedValueEnergy) Void() bool {
 		return true
 	}
 
-	if origin.Base.Void() {
+	if origin.EloEnergy.Void() {
 		return true
 	} else {
-		return math.Abs(origin.GetFloat64()) <= origin.ConsiderZero
+		return math.Abs(origin.GetFloat64()) <= origin.ZeroThreshold
 	}
 }
 
 func (origin *GeneratedValueEnergy) Scatter(n int) []Energy {
 	scattered := []Energy{}
-	for _, base := range origin.Base.Scatter(n) {
+	for _, base := range origin.EloEnergy.Scatter(n) {
 		scattered = append(scattered,
 			&GeneratedValueEnergy{
-				Base:                 base,
+				EloEnergy:            base.(*EloEnergy),
 				TargetValueGenerator: origin.TargetValueGenerator,
 				TargetValue:          origin.TargetValue,
-				ConsiderZero:         origin.ConsiderZero,
-				AvgPeriod:            origin.AvgPeriod,
+				ZeroThreshold:        origin.ZeroThreshold,
 			},
 		)
 	}
@@ -94,7 +61,7 @@ func (origin *GeneratedValueEnergy) Scatter(n int) []Energy {
 }
 
 func (origin *GeneratedValueEnergy) TransferTo(energy Energy) {
-	origin.Base.TransferTo(energy.(*GeneratedValueEnergy).Base)
+	origin.EloEnergy.TransferTo(energy.(*GeneratedValueEnergy).EloEnergy)
 }
 
 func (origin *GeneratedValueEnergy) Split() Energy {
@@ -116,31 +83,22 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 }
 
 func (origin GeneratedValueEnergy) String() string {
-	return fmt.Sprintf("error: %f~%f; score: %f; base: %s\ngenerator: %s",
+	return fmt.Sprintf("error: %f; energy: %f; elo: %d;\ngenerator: %s",
 		origin.GetCurrentError(),
-		origin.GetMaxError(),
 		origin.GetFloat64(),
-		origin.Base,
+		origin.GetEloScore(),
 		origin.TargetValueGenerator,
 	)
 }
 
 func (origin *GeneratedValueEnergy) Simulate() {
-	if origin.Age > 0 {
-		origin.Errors = append(origin.Errors, origin.GetCurrentError())
-		errorsCount := len(origin.Errors)
-		if errorsCount > origin.AvgPeriod {
-			origin.Errors = origin.Errors[errorsCount-origin.AvgPeriod-1 : errorsCount-1]
-		}
-	}
-
 	origin.CurrentValue = 0
 	origin.TargetValue = origin.TargetValueGenerator.Generate()
 	origin.Age++
 }
 
 func (origin *GeneratedValueEnergy) Free() {
-	origin.Base.Free()
+	origin.EloEnergy.Free()
 }
 
 func (origin *GeneratedValueEnergy) SetCurrentValue(value float64) {

@@ -164,13 +164,16 @@ func converge(
 		)
 
 		energy := &GeneratedValueEnergy{
-			Base: &ReproductiveEnergy{
-				Potential: 1,
+			EloEnergy: &EloEnergy{
+				Base: &ReproductiveEnergy{
+					Potential: 1,
+				},
+
+				Score:     1500,
+				BaseScore: 1500,
 			},
 
-			ConsiderZero: 1e-12,
-
-			AvgPeriod: minReproduceAge,
+			ZeroThreshold: 1e-12,
 
 			TargetValueGenerator: valueGenerator,
 		}
@@ -182,10 +185,11 @@ func converge(
 		Rules: []Rules{
 			defaultSumulationRules,
 			defaultReapRules,
+			defaultEloRatingsRules,
 			defaultAggressiveSelectionRules,
 			defaultReapRules,
 			defaultAggressiveReproduceRules(programInstructionVariants),
-			//defaultBacterialRules,
+			defaultBacterialRules,
 			//defaultMutateRules(programInstructionVariants),
 			//defaultReapRules,
 		},
@@ -238,7 +242,7 @@ func validate(
 }
 
 func getBest(population Population) Creature {
-	sort.Sort(ByAvgError(population))
+	sort.Sort(ByCurrentError(population))
 
 	return population[0]
 }
