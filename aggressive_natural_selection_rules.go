@@ -33,37 +33,17 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 		return
 	}
 
-	adultsCount := len(adults)
-	deadIndex := int(math.Min(
-		float64(adultsCount)*rules.DiePercentile,
-		float64(adultsCount-1),
-	))
+	//deadIndex := int(float64(len(*population)) * (1 - rules.DiePercentile))
+	deadIndex := int(float64(rules.BasePopulationSize) * (1 - rules.DiePercentile))
+	log.Printf("XXX %#v", deadIndex)
 
-	percentileValue := adults[deadIndex].GetEnergy().(EloBasedEnergy).GetEloScore()
+	percentileValue := (*population)[deadIndex].GetEnergy().(EloBasedEnergy).GetEloScore()
 
 	Log(Debug,
 		"SELECTION: killing percentile: %d <%p>",
 		percentileValue,
-		adults[deadIndex],
+		(*population)[deadIndex],
 	)
-
-	//for _, creature := range children {
-	//    score := creature.GetEnergy().(EloBasedEnergy).GetEloScore()
-
-	//    if creature.GetAge() <= rules.MinAge {
-	//        continue
-	//    }
-
-	//    if score >= percentileValue {
-	//        continue
-	//    }
-
-	//    creature.Kill()
-
-	//    Log(Debug, "SELECTION: CREATURE<%p> child is killed (%d < %d)",
-	//        creature, score, percentileValue,
-	//    )
-	//}
 
 	minAliveCount := int(math.Max(
 		1.0,
@@ -77,7 +57,7 @@ func (rules AggressiveNaturalSelectionRules) Apply(
 			break
 		}
 
-		if score > percentileValue {
+		if score >= percentileValue {
 			continue
 		}
 

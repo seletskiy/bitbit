@@ -23,6 +23,29 @@ func (creatures ByEnergy) Less(i, j int) bool {
 		creatures[j].GetEnergy().GetFloat64()
 }
 
+type ByEnergyReverse []Creature
+
+func (creatures ByEnergyReverse) Len() int {
+	return len(creatures)
+}
+
+func (creatures ByEnergyReverse) Swap(i, j int) {
+	creatures[i], creatures[j] = creatures[j], creatures[i]
+}
+
+func (creatures ByEnergyReverse) Less(i, j int) bool {
+	if creatures[i].GetEnergy().Void() {
+		return false
+	}
+
+	if creatures[j].GetEnergy().Void() {
+		return true
+	}
+
+	return creatures[i].GetEnergy().GetFloat64() >
+		creatures[j].GetEnergy().GetFloat64()
+}
+
 type ByAge []Creature
 
 func (creatures ByAge) Len() int {
@@ -60,4 +83,29 @@ func (creatures ByCurrentError) Less(i, j int) bool {
 	b := creatures[j].GetEnergy().(ErrorBasedEnergy).GetCurrentError()
 
 	return a < b
+}
+
+type ByEloScore []Creature
+
+func (creatures ByEloScore) Len() int {
+	return len(creatures)
+}
+
+func (creatures ByEloScore) Swap(i, j int) {
+	creatures[i], creatures[j] = creatures[j], creatures[i]
+}
+
+func (creatures ByEloScore) Less(i, j int) bool {
+	if creatures[i].GetEnergy().Void() {
+		return true
+	}
+
+	if creatures[j].GetEnergy().Void() {
+		return false
+	}
+
+	a := creatures[i].GetEnergy().(EloBasedEnergy).GetEloScore()
+	b := creatures[j].GetEnergy().(EloBasedEnergy).GetEloScore()
+
+	return a > b
 }

@@ -15,7 +15,8 @@ type EloRules struct {
 func (rules EloRules) Apply(
 	population *Population,
 ) {
-	sort.Sort(ByEnergy(*population))
+	//sort.Sort(ByEnergyReverse(*population))
+	sort.Sort(ByEloScore(*population))
 
 	eloPlayers := make([]*EloPlayer, len(*population))
 	for i, creature := range *population {
@@ -29,52 +30,71 @@ func (rules EloRules) Apply(
 	eloRatings.StrongProbability = rules.StrongProbability
 	eloRatings.OpponentVariance = rules.OpponentVariance
 
-	for _, player := range eloPlayers {
+	for index, _ := range eloPlayers {
+		player := eloPlayers[len(eloPlayers)-index-1]
 		versus := eloRatings.ChooseOpponent(player)
 
 		playerEnergy := player.Player.(Creature).GetEnergy()
 		versusEnergy := versus.Player.(Creature).GetEnergy()
-
-		Log(Debug,
-			"ELO: CREATURE<%p> %4d (%f) vs CREATURE<%p> %4d (%f)",
-			player.Player,
-			playerEnergy.(EloBasedEnergy).GetEloScore(),
-			playerEnergy.GetFloat64(),
-			versus.Player,
-			versusEnergy.(EloBasedEnergy).GetEloScore(),
-			versusEnergy.GetFloat64(),
-		)
 
 		playerEnergyValue := playerEnergy.GetFloat64()
 		versusEnergyValue := versusEnergy.GetFloat64()
 
 		energyValueDiff := math.Abs(1.0 - playerEnergyValue/versusEnergyValue)
 
+		newPlayerScore := 0
+		newVersusScore := 0
 		if energyValueDiff > rules.DrawThreshold {
 			if playerEnergyValue > versusEnergyValue {
-				player.Score = eloRatings.Compute(player, versus, EloMatchWin)
-				versus.Score = eloRatings.Compute(versus, player, EloMatchLoss)
+				newPlayerScore = eloRatings.Compute(player, versus, EloMatchWin)
+				newVersusScore = eloRatings.Compute(versus, player, EloMatchLoss)
 
 				Log(Debug,
-					"ELO: CREATURE<%p> WIN -> %d",
+					"ELO: <%p> %4d->%4d (%14.3g) WIN  <%p> %4d->%4d (%14.3g)",
 					player.Player,
 					player.Score,
+					newPlayerScore,
+					playerEnergy.GetFloat64(),
+					versus.Player,
+					versus.Score,
+					newVersusScore,
+					versusEnergy.GetFloat64(),
 				)
 			} else {
-				player.Score = eloRatings.Compute(player, versus, EloMatchLoss)
-				versus.Score = eloRatings.Compute(versus, player, EloMatchWin)
+				newPlayerScore = eloRatings.Compute(player, versus, EloMatchLoss)
+				newVersusScore = eloRatings.Compute(versus, player, EloMatchWin)
 
 				Log(Debug,
-					"ELO: CREATURE<%p> LOSS -> %d",
+					"ELO: <%p> %4d->%4d (%14.3g) LOSS <%p> %4d->%4d (%14.3g)",
 					player.Player,
 					player.Score,
+					newPlayerScore,
+					playerEnergy.GetFloat64(),
+					versus.Player,
+					versus.Score,
+					newVersusScore,
+					versusEnergy.GetFloat64(),
 				)
 			}
 		} else {
-			player.Score = eloRatings.Compute(player, versus, EloMatchDraw)
-			versus.Score = eloRatings.Compute(versus, player, EloMatchDraw)
-			Log(Debug, "ELO: CREATURE<%p> DRAW -> %d", player, player.Score)
+			newPlayerScore = eloRatings.Compute(player, versus, EloMatchDraw)
+			newVersusScore = eloRatings.Compute(versus, player, EloMatchDraw)
+
+			Log(Debug,
+				"ELO: <%p> %4d->%4d (%14.3g) DRAW <%p> %4d->%4d (%14.3g)",
+				player.Player,
+				player.Score,
+				newPlayerScore,
+				playerEnergy.GetFloat64(),
+				versus.Player,
+				versus.Score,
+				newVersusScore,
+				versusEnergy.GetFloat64(),
+			)
 		}
+
+		player.Score = newPlayerScore
+		versus.Score = newVersusScore
 
 		eloRatings.Update(player)
 		eloRatings.Update(versus)
@@ -94,12 +114,16 @@ func (rules EloRules) Apply(
 		//    break
 		//}
 
+		index++
+
 		Log(Debug,
-			"ELO: TOP | %4d  %f  CREATURE<%p>",
+			"ELO: TOP %4d) %4d  %15.3g  CREATURE<%p>",
+			index,
 			int(ptr.Value.(*EloPlayer).Score),
 			ptr.Value.(*EloPlayer).Player.(Creature).GetEnergy().GetFloat64(),
 			ptr.Value.(*EloPlayer).Player,
 		)
-		index++
 	}
+
+	sort.Sort(ByEloScore(*population))
 }

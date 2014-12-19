@@ -44,7 +44,7 @@ const (
 	dnaMutationMaxSize     = 1
 	dnaMutationCount       = 2
 
-	geneMutationProbability = 0.2
+	geneMutationProbability = 0.5
 
 	diePercentile = 0.90
 
@@ -86,9 +86,8 @@ var defaultAggressiveSelectionRules = AggressiveNaturalSelectionRules{
 
 var defaultEloRatingsRules = EloRules{
 	DrawThreshold:     0.0001,
-	TopCount:          10,
-	StrongProbability: 0.7,
-	OpponentVariance:  5,
+	StrongProbability: 1.0,
+	OpponentVariance:  initialPopulationSize * (1 - diePercentile),
 }
 
 func defaultVarianceGenerator() float64 {

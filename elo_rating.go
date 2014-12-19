@@ -2,6 +2,7 @@ package main
 
 import (
 	"container/list"
+	"log"
 	"math"
 	"math/rand"
 )
@@ -89,8 +90,18 @@ func (ratings *EloRatings) ChooseOpponent(player *EloPlayer) *EloPlayer {
 		index++
 	}
 
-	randValue := 2 * (rand.Float64() - ratings.StrongProbability) *
-		ratings.OpponentVariance
+	variance := ratings.OpponentVariance
+	offset := ratings.StrongProbability
+	if playerIndex < int(variance*ratings.StrongProbability) {
+		offset = float64(playerIndex) / variance
+	}
+
+	if len(opponents)-playerIndex <= int(variance*(1-ratings.StrongProbability)) {
+		offset = 1
+	}
+
+	variance -= 1
+	randValue := (rand.Float64() - offset) * float64(variance)
 	if randValue > 0 {
 		randValue += 1
 	} else {
@@ -104,8 +115,10 @@ func (ratings *EloRatings) ChooseOpponent(player *EloPlayer) *EloPlayer {
 	}
 
 	if chosenIndex >= len(opponents) {
-		chosenIndex = len(opponents) - 1 - playerIndex
+		chosenIndex = playerIndex - 1
 	}
+
+	log.Printf("XXX %d vs %d", playerIndex, chosenIndex)
 
 	return opponents[chosenIndex].Value.(*EloPlayer)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 )
@@ -21,8 +22,8 @@ type Plasmid struct {
 func (p *Plasmid) Apply(chromosome *SimpleChromosome) (bool, int) {
 	dna := chromosome.DNA
 	if variants := matchPrefix(dna, p.Prefix); len(variants) > 0 {
-		p.ReplaceIndex = rand.Intn(len(variants))
-		dna.Replace(variants[p.ReplaceIndex], p.Code)
+		p.ReplaceIndex = variants[rand.Intn(len(variants))]
+		dna.Replace(p.ReplaceIndex+len(p.Prefix), p.Code)
 		p.Applied = true
 		return true, p.ReplaceIndex
 	} else {
@@ -69,30 +70,27 @@ func matchPrefix(dna DNA, prefix []Gene) []int {
 	result := make([]int, 0)
 
 	dnaCode := dna.GetCode()
-	for j, _ := range dnaCode {
-		i := 0
+	for startIndex, _ := range dnaCode {
 		matched := true
-		for _, gene2 := range prefix {
-			if j+i >= len(dnaCode) {
+		for checkIndex, gene2 := range prefix {
+			if startIndex+checkIndex >= len(dnaCode) {
 				matched = false
 				break
 			}
 
-			gene := dnaCode[j+i]
-			if dna.EqGenes(gene, gene2) {
-				continue
-			} else {
+			gene := dnaCode[startIndex+checkIndex]
+			if !dna.EqGenes(gene, gene2) {
 				matched = false
 				break
 			}
-
-			j += 1
 		}
 
 		if matched {
-			result = append(result, j)
+			result = append(result, startIndex)
 		}
 	}
+
+	log.Printf("%#v", result)
 
 	return result
 }

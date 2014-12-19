@@ -47,8 +47,11 @@ func (generator LinearGenerator) GetData(tableIndex, cellIndex int) float64 {
 }
 
 func (generator *LinearGenerator) Simulate() {
-	//generator.X += 0.001
-	generator.X = 2 * (rand.Float64() - 0.5) * 1000.0
+	sign := -1.0
+	if generator.X < generator.B {
+		sign = 1.0
+	}
+	generator.X = sign * rand.Float64() * 1000.0
 }
 
 func (generator LinearGenerator) String() string {
