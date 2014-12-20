@@ -30,21 +30,21 @@ const (
 	powInstructionProbability             = 0.2
 
 	floatValueMutationProbability = 0.9
-	indexMutationProbability      = 0.5
+	indexMutationProbability      = 0.1
 	referenceMutationProbability  = 0.4
-	registerMutationProbability   = 0.3
+	registerMutationProbability   = 0.1
 	jumpMutationProbability       = 0.2
 
-	smallMutationValueMutationProbability = 0.6
-	smallMutationVariance                 = 1 / 1000.0
-	offsetMutationProbability             = 0.3
+	smallMutationValueMutationProbability = 0.9
+	smallMutationVariance                 = 1 / 10000.0
+	offsetMutationProbability             = 0.9
 	basicMutationVariance                 = 10.0
 
 	dnaMutationProbability = 0.3
 	dnaMutationMaxSize     = 1
 	dnaMutationCount       = 2
 
-	geneMutationProbability = 0.5
+	geneMutationProbability = 0.9
 
 	diePercentile = 0.90
 
@@ -59,7 +59,6 @@ func defaultAggressiveReproduceRules(
 ) AggressiveReproduceRules {
 	return AggressiveReproduceRules{
 		MutateRules: defaultMutateRules(programInstructionVariants),
-		MinAge:      minReproduceAge,
 	}
 }
 
@@ -78,7 +77,15 @@ var defaultBacterialRules = BacterialGeneTransferRules{
 	MaxPlasmidLength:              5,
 }
 
+var defaultStochasticUniversalSelectionRules = StochasticUnversalSelectionRules{
+	DiePercentile: diePercentile,
+}
+
 var defaultAggressiveSelectionRules = AggressiveNaturalSelectionRules{
+	DiePercentile: diePercentile,
+}
+
+var defaultEloSelectionRules = EloSelectionRules{
 	DiePercentile:      diePercentile,
 	MinAge:             minSelectionAge,
 	BasePopulationSize: initialPopulationSize,
@@ -137,6 +144,10 @@ func defaultGeneMutator(gene Gene) Gene {
 	}
 
 	operandIndex := ChooseWeighted(weights)
+
+	if weights[operandIndex] < rand.Float64() {
+		return nil
+	}
 
 	var mutatedArg ProgramInstructionArg
 	switch concreteOperand := instruction.GetArg(operandIndex).(type) {

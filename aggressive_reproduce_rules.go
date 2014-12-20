@@ -2,8 +2,6 @@ package main
 
 type AggressiveReproduceRules struct {
 	MutateRules
-
-	MinAge int
 }
 
 func (rules AggressiveReproduceRules) Apply(population *Population) {
@@ -11,12 +9,6 @@ func (rules AggressiveReproduceRules) Apply(population *Population) {
 	for _, creature := range *population {
 		if creature.Died() {
 			continue
-		}
-
-		if creature.GetAge() < rules.MinAge {
-			if len(creature.GetParents()) != 0 {
-				continue
-			}
 		}
 
 		toReproduce = append(toReproduce, creature)

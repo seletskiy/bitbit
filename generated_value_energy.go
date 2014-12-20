@@ -29,7 +29,7 @@ func (origin *GeneratedValueEnergy) GetCurrentError() float64 {
 }
 
 func (origin GeneratedValueEnergy) GetFloat64() float64 {
-	return -origin.GetCurrentError()
+	return 1 / origin.GetCurrentError()
 }
 
 func (origin GeneratedValueEnergy) Void() bool {
@@ -83,10 +83,11 @@ func (origin *GeneratedValueEnergy) Split() Energy {
 }
 
 func (origin GeneratedValueEnergy) String() string {
-	return fmt.Sprintf("error: %f; energy: %f; elo: %d;\ngenerator: %s",
+	return fmt.Sprintf("error: %f; energy: %f; splity: %d;\ngenerator: %s",
 		origin.GetCurrentError(),
 		origin.GetFloat64(),
-		origin.GetEloScore(),
+		//origin.EloEnergy.Potential,
+		origin.EloEnergy.GetEloScore(),
 		origin.TargetValueGenerator,
 	)
 }

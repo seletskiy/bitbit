@@ -50,14 +50,16 @@ func (rules EloRules) Apply(
 				newVersusScore = eloRatings.Compute(versus, player, EloMatchLoss)
 
 				Log(Debug,
-					"ELO: <%p> %4d->%4d (%14.3g) WIN  <%p> %4d->%4d (%14.3g)",
+					"ELO: <%p> %4d->%4d ^%d (%12.5g) WIN  <%p> %4d->%4d ^%d (%12.5g)",
 					player.Player,
 					player.Score,
 					newPlayerScore,
+					playerEnergy.(EloBasedEnergy).GetWinsInRow(),
 					playerEnergy.GetFloat64(),
 					versus.Player,
 					versus.Score,
 					newVersusScore,
+					versusEnergy.(EloBasedEnergy).GetWinsInRow(),
 					versusEnergy.GetFloat64(),
 				)
 			} else {
@@ -65,14 +67,16 @@ func (rules EloRules) Apply(
 				newVersusScore = eloRatings.Compute(versus, player, EloMatchWin)
 
 				Log(Debug,
-					"ELO: <%p> %4d->%4d (%14.3g) LOSS <%p> %4d->%4d (%14.3g)",
+					"ELO: <%p> %4d->%4d ^%d (%12.5g) LOSS <%p> %4d->%4d ^%d (%12.5g)",
 					player.Player,
 					player.Score,
 					newPlayerScore,
+					playerEnergy.(EloBasedEnergy).GetWinsInRow(),
 					playerEnergy.GetFloat64(),
 					versus.Player,
 					versus.Score,
 					newVersusScore,
+					versusEnergy.(EloBasedEnergy).GetWinsInRow(),
 					versusEnergy.GetFloat64(),
 				)
 			}
@@ -81,14 +85,16 @@ func (rules EloRules) Apply(
 			newVersusScore = eloRatings.Compute(versus, player, EloMatchDraw)
 
 			Log(Debug,
-				"ELO: <%p> %4d->%4d (%14.3g) DRAW <%p> %4d->%4d (%14.3g)",
+				"ELO: <%p> %4d->%4d ^%d (%12.5g) DRAW <%p> %4d->%4d ^%d (%12.5g)",
 				player.Player,
 				player.Score,
 				newPlayerScore,
+				playerEnergy.(EloBasedEnergy).GetWinsInRow(),
 				playerEnergy.GetFloat64(),
 				versus.Player,
 				versus.Score,
 				newVersusScore,
+				versusEnergy.(EloBasedEnergy).GetWinsInRow(),
 				versusEnergy.GetFloat64(),
 			)
 		}
@@ -117,11 +123,12 @@ func (rules EloRules) Apply(
 		index++
 
 		Log(Debug,
-			"ELO: TOP %4d) %4d  %15.3g  CREATURE<%p>",
+			"ELO: TOP %4d) %4d  %15.5g  CREATURE<%p> ^%d",
 			index,
 			int(ptr.Value.(*EloPlayer).Score),
 			ptr.Value.(*EloPlayer).Player.(Creature).GetEnergy().GetFloat64(),
 			ptr.Value.(*EloPlayer).Player,
+			ptr.Value.(*EloPlayer).Player.(Creature).GetEnergy().(EloBasedEnergy).GetWinsInRow(),
 		)
 	}
 

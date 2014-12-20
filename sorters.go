@@ -109,3 +109,30 @@ func (creatures ByEloScore) Less(i, j int) bool {
 
 	return a > b
 }
+
+type ByWinsInRow []*EloPlayer
+
+func (players ByWinsInRow) Len() int {
+	return len(players)
+}
+
+func (players ByWinsInRow) Swap(i, j int) {
+	players[i], players[j] = players[j], players[i]
+}
+
+func (players ByWinsInRow) Less(i, j int) bool {
+	energyA := players[i].Player.(Creature).GetEnergy()
+	energyB := players[j].Player.(Creature).GetEnergy()
+	if energyA.Void() {
+		return true
+	}
+
+	if energyB.Void() {
+		return false
+	}
+
+	a := energyA.(EloBasedEnergy).GetWinsInRow()
+	b := energyB.(EloBasedEnergy).GetWinsInRow()
+
+	return a < b
+}

@@ -2,9 +2,9 @@ package main
 
 import (
 	"container/list"
-	"log"
 	"math"
 	"math/rand"
+	"sort"
 )
 
 type EloMatchResult float64
@@ -53,7 +53,6 @@ func (ratings *EloRatings) replaceElementSorted(player *EloPlayer) {
 
 	for ptr := ratings.Front(); ptr != nil; ptr = ptr.Next() {
 		if ptr.Value.(*EloPlayer).Score <= player.Score {
-			//log.Printf("%#v", ptr)
 			ratings.InsertBefore(player, ptr)
 			return
 		}
@@ -75,52 +74,54 @@ func (ratings *EloRatings) findElement(player *EloPlayer) *list.Element {
 }
 
 func (ratings *EloRatings) ChooseOpponent(player *EloPlayer) *EloPlayer {
-	index := 0
-	playerIndex := 0
-	opponents := make([]*list.Element, ratings.Len())
-	if len(opponents) <= 1 {
-		return nil
-	}
+	players := make([]*EloPlayer, ratings.Len())
 
+	index := 0
 	for ptr := ratings.Front(); ptr != nil; ptr = ptr.Next() {
-		opponents[index] = ptr
-		if ptr.Value.(*EloPlayer) == player {
-			playerIndex = index
-		}
+		players[index] = ptr.Value.(*EloPlayer)
 		index++
 	}
 
-	variance := ratings.OpponentVariance
-	offset := ratings.StrongProbability
-	if playerIndex < int(variance*ratings.StrongProbability) {
-		offset = float64(playerIndex) / variance
+	sort.Sort(ByWinsInRow(players))
+
+	playerIndex := 0
+	for i, ptr := range players {
+		if player == ptr {
+			playerIndex = i
+		}
 	}
 
-	if len(opponents)-playerIndex <= int(variance*(1-ratings.StrongProbability)) {
-		offset = 1
+	//for _, player := range players {
+	//    log.Printf("XXX %p %d",
+	//        player.Player,
+	//        player.Player.(Creature).GetEnergy().(EloBasedEnergy).GetWinsInRow(),
+	//    )
+	//}
+
+	rangeStart := playerIndex - int(ratings.OpponentVariance/2)
+	rangeEnd := playerIndex + int(ratings.OpponentVariance/2)
+
+	if rangeStart < 0 {
+		rangeEnd += -rangeStart
+		rangeStart = 0
 	}
 
-	variance -= 1
-	randValue := (rand.Float64() - offset) * float64(variance)
-	if randValue > 0 {
-		randValue += 1
-	} else {
-		randValue -= 1
+	if rangeEnd >= len(players) {
+		rangeStart -= rangeEnd - len(players)
+		rangeEnd = len(players) - 1
 	}
 
-	chosenIndex := int(randValue) + playerIndex
-
-	if chosenIndex < 0 {
-		chosenIndex = playerIndex + 1
+	versusIndex := 0
+	for {
+		versusIndex = rand.Intn(rangeEnd-rangeStart) + rangeStart
+		if versusIndex != playerIndex {
+			break
+		}
 	}
 
-	if chosenIndex >= len(opponents) {
-		chosenIndex = playerIndex - 1
-	}
+	//log.Printf("XXX %d vs %d", playerIndex, versusIndex)
 
-	log.Printf("XXX %d vs %d", playerIndex, chosenIndex)
-
-	return opponents[chosenIndex].Value.(*EloPlayer)
+	return players[versusIndex]
 }
 
 func (ratings *EloRatings) Compute(

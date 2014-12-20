@@ -44,7 +44,7 @@ func (bacteria *SimpleBacteria) Reproduce() Creature {
 	return &SimpleBacteria{
 		Energy:     newEnergy,
 		Chromosome: bacteria.Chromosome.Clone(),
-		Parents:    []Creature{bacteria},
+		//Parents:    []Creature{bacteria},
 	}
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"strings"
 )
@@ -89,8 +88,6 @@ func matchPrefix(dna DNA, prefix []Gene) []int {
 			result = append(result, startIndex)
 		}
 	}
-
-	log.Printf("%#v", result)
 
 	return result
 }

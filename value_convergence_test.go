@@ -28,6 +28,29 @@ func (generator ConstGenerator) String() string {
 	return fmt.Sprintf("%f", generator)
 }
 
+type CeilGenerator struct {
+	X float64
+}
+
+func (generator *CeilGenerator) Generate() float64 {
+	return math.Ceil(generator.X)
+}
+
+func (generator CeilGenerator) GetData(tableIndex, cellIndex int) float64 {
+	return 0
+}
+
+func (generator *CeilGenerator) Simulate() {
+	generator.X = rand.Float64() * 1000.0
+}
+
+func (generator CeilGenerator) String() string {
+	return fmt.Sprintf("Y = CEIL( X ) = %.3f, X = %.3f",
+		generator.Generate(),
+		generator.X,
+	)
+}
+
 type LinearGenerator struct {
 	A float64
 	B float64
@@ -189,7 +212,8 @@ func converge(
 			defaultSumulationRules,
 			defaultReapRules,
 			defaultEloRatingsRules,
-			defaultAggressiveSelectionRules,
+			//defaultAggressiveSelectionRules,
+			defaultEloSelectionRules,
 			defaultReapRules,
 			defaultAggressiveReproduceRules(programInstructionVariants),
 			defaultBacterialRules,
@@ -210,13 +234,13 @@ func converge(
 				&population, validator, stabilityCheckLength)
 		}
 
+		fmt.Printf("BEST:\n%s", getBest(population))
+
 		if validated {
 			break
 		}
 
 		tick++
-
-		fmt.Printf("BEST:\n%s", getBest(population))
 	}
 
 	return population, tick
@@ -245,7 +269,7 @@ func validate(
 }
 
 func getBest(population Population) Creature {
-	sort.Sort(ByCurrentError(population))
+	sort.Sort(ByEnergyReverse(population))
 
 	return population[0]
 }
@@ -268,8 +292,8 @@ func TestCanEstimateLinearFunction(t *testing.T) {
 
 	_, _ = converge(
 		&LinearGenerator{
-			A: 32.0,
-			B: 16.0,
+			A: 32123.0,
+			B: 1656789.0,
 		},
 		validator,
 		[]RandInstructionVariant{},
@@ -289,6 +313,19 @@ func TestCanEstimateSinFunction(t *testing.T) {
 			Period:    1.0,
 			History:   make([]float64, 1000),
 		},
+		validator,
+		[]RandInstructionVariant{},
+		50,
+	)
+}
+
+func TestCanEstimateCeilFunction(t *testing.T) {
+	validator := MedianErrorValidator{
+		Threshold: 0.001,
+	}
+
+	_, _ = converge(
+		&CeilGenerator{},
 		validator,
 		[]RandInstructionVariant{},
 		50,

@@ -3,6 +3,7 @@ package main
 type EloBasedEnergy interface {
 	GetEloScore() int
 	SetEloScore(int)
+	GetWinsInRow() int
 }
 
 type EloEnergy struct {
@@ -10,6 +11,7 @@ type EloEnergy struct {
 	Score        int
 	BaseScore    int
 	MinEloRating int
+	WinsInRow    int
 }
 
 func (origin *EloEnergy) GetFloat64() float64 {
@@ -21,7 +23,17 @@ func (origin *EloEnergy) GetEloScore() int {
 }
 
 func (origin *EloEnergy) SetEloScore(score int) {
+	if origin.Score >= score {
+		origin.WinsInRow = 0
+	} else {
+		origin.WinsInRow++
+	}
+
 	origin.Score = score
+}
+
+func (origin *EloEnergy) GetWinsInRow() int {
+	return origin.WinsInRow
 }
 
 func (origin *EloEnergy) Void() bool {
