@@ -1,3 +1,3 @@
 #!/bin/sh
 
-go build && ./bitbit-ng
+go test
